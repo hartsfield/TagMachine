@@ -1,0 +1,142 @@
+{{ define "head" }}
+        <head>
+                <link rel="shortcut icon" type="image/png" href="/public/assets/disc.png"/>
+                <link rel="stylesheet" href="/public/css/secondary.css" type="text/css" media="screen" charset="utf-8">
+                <link rel="stylesheet" href="/public/css/main.css" type="text/css" media="screen" charset="utf-8">
+                <script type="text/javascript" src="/public/js/main.js"></script>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+{{ end }}
+
+{{ define "nav" }}
+        <div class="mainNav">                                                
+                <ul>                                                               
+                        {{ if .UserData.IsLoggedIn }}
+                                <li class="loginButt genericButt"><div><a href="/user/{{ .UserData.Name }}">{{ .UserData.Name }}</a></div></li>
+                        {{ else }}
+                                <li class="loginButt genericButt" onClick="showLogin()">LOGIN</li>
+                        {{ end }}
+                        <li class="homeButt genericButt"><div><a href="/">###</a></div></li>
+                        {{ range $key, $tag := .Tags }}
+                                <li id="tag_{{ $tag }}" class="tagButt genericButt" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
+                        {{ end }}
+                        <li class="showTrending genericButt" onClick="getTrending()" >trends ➡</li>  
+                        {{ if .UserData.IsLoggedIn }}
+                                <li class="newPostButt genericButt" onClick="showPostForm()">POST</li>               
+                        {{ end }}
+                </ul>                                                              
+        </div>                                                               
+{{ end }}
+
+{{ define "login" }}
+        <form id="loginForm" method="post" style="display: none">
+                <div class="formDiv post">
+                        <input id="username" class="loginInput" name="username" placeholder="username" required maxlength="27" minlength="2"/>
+                        <input id="password" class="loginInput" name="password" type="password" placeholder="password" required minlength="8" maxlength="27"/>
+                        <!-- <div id="errorField"></div> -->
+                        <div id="formButts">
+                                <div class="loginFormButt" id="signinButt" onClick="auth('signin')">signin</div>
+                                <div class="loginFormButt" id="signupButt" onClick="auth('signup')">signup</div>
+                        </div>
+                </div>
+        </form>
+{{ end }}
+
+{{ define "postForm" }}
+        <form id="newPostForm" method="post" style="display: none">
+                <input class="titleInput" name="title" placeholder="title"/>
+                <textarea id="postBody" name="postBody" placeholder="Content" required minlength="8" maxlength="2500"></textarea>
+                <!-- <input id="postSubmitButt"type="submit" value="post" formaction="/api/newthread"/> -->
+                <div id="postButt" onClick="postThread()">Please pick at least one #tag from above and include some content</div>
+        </form>
+{{ end }}
+
+{{ define "frontpagePosts" }}
+        <div id="posts">                                                                                                                                                
+                <ul>                                                                                                                                                          
+                        {{ range $key, $value := .}}                                                                                                                        
+                                <li class="post">                                                                                                                                         
+                                        <a href="/view/?postNum={{ $value.ID  }}">
+                                                <div class="postHead">
+                                                        <div class="postHeadChild" id="author_{{$value.ID}}">By: {{ $value.Author }}</div>
+                                                        <div class="postHeadChild" id="postID_{{$value.ID}}"> on {{ $value.TS }}</div>
+                                                </div>
+                                                <div class="postBody postTitle">{{ $value.Title }}</div>
+                                                <div class="postBody">{{ $value.Body }}</div>
+                                        </a>                                                                                                                                                    
+                                        <div class="postInfo">
+                                                {{ range $k, $t := .Tags }}
+                                                        <div class="showTagInput" onClick="showTagger({{ $value.ID }})">#{{$t}}</div>
+                                                {{end}}
+
+                                                <div class="showTagInput replyButt">
+                                                        <a onclick="showReplyForm({{$value.ID}})">+reply</a>                                                                                                                                                
+                                                </div>                                                                                                                                                
+                                                <div id="replyForm_{{$value.ID}}" style="display: none">
+                                                        <textarea id="replyBody_{{$value.ID}}"></textarea>
+                                                        <div onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
+                                                </div>
+                                        </div>
+                                </li>                                                                                                                                                     
+                        {{ end }}                                                                                                                                                   
+                </ul>                                                                                                                                                         
+        </div>                                                                                                                                                  
+{{ end }}
+
+{{ define "thread" }}
+        <div class="post top-level">
+                <div class="postHead">
+                        <div class="postHeadChild" id="author_{{.Thread.ID}}">By: {{ .Thread.Author }}</div>
+                        <div class="postHeadChild" id="postID_{{.Thread.ID}}"> on {{ .Thread.TS }}</div>
+                </div>
+                <div class="postBody postTitle">{{ .Thread.Title }}</div>
+                <div class="postBody">{{ .Thread.Body }}</div>
+
+                <div class="postInfo">
+                        {{ range $k, $t := .Thread.Tags }}
+                                <div class="showTagInput" onClick="showTagger()">#{{$t}}</div>
+                        {{end}}
+
+                        <div class="showTagInput replyButt">
+                                <a onclick="showReplyForm({{.Thread.ID}})">+reply</a>                                                                                                                                                
+                        </div>                                                                                                                                                
+                        <div id="replyForm_{{.Thread.ID}}" style="display: none">
+                                <textarea id="replyBody_{{.Thread.ID}}"></textarea>
+                                <div onClick="reply({{.Thread.ID}}, {{.Thread.Parent}})">reply</div>
+                        </div>
+                </div>
+        </div>
+        <div id="posts">
+                <div class="replyPost">{{ template "replies" .Children }}</div>
+        </div>
+{{ end }}
+
+{{define "replies"}}
+        <ul>
+                {{ range $key, $value := . }}
+                        <li class="post" id="postID_{{ $value.ID }}">
+                                <div class="postBody">{{ $value.Body }} {{$value.ID}}</div>
+
+                                {{template "replies" $value.Children }}
+                        </li>
+                {{end}}
+        </ul>
+{{end}}
+
+{{define "footer"}}
+        <div id="foot">
+                <div id="footCenter">
+                        <div id="sym">☯</div>
+                        <div id="povi">POSITIVE VIBES 4 EVER</div>
+                </div>
+                <div id="bottomInfo">
+                        {{ if .UserData.IsLoggedIn }}
+                                <div class="loginFormButt" id="logoutButt" onClick="auth('logout')">logout</div>
+                        {{ end }}
+                        <div class="loginFormButt" id="contactButt" onClick="showContact()">Contact</div>
+                        <div class="loginFormButt" id="donateButt" onClick="showCode()">Donate</div>
+                </div>
+        </div>
+{{end}}
+
+

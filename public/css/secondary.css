@@ -1,0 +1,176 @@
+.mainNav {
+    margin-left: 1em;
+    margin-bottom: 1em;
+}
+
+.mainNav>ul>li {
+    list-style-type: none;
+    display: inline-block;
+    margin-top: 0.5em;
+    font-size: 1em;
+}
+
+.tagButt {
+    background: #d52e12;
+}
+
+.showTrending {
+    background: #2f474c;
+}
+
+/* .makeThread { */
+
+/*     /1* margin: 1em; *1/ */
+
+/*     background: yellow; */
+
+/*     color: black; */
+
+/*     margin-left: 1em; */
+
+/*     border-radius: 0.3em; */
+
+/* } */
+
+#postSubmitButt {
+    display: inline-block;
+}
+
+#postButt {
+    background-color: #d52e12;
+    margin-top: 1em;
+    padding: 0.3em;
+    color: white;
+    text-transform: uppercase;
+    text-align: center;
+    border-radius: 0.2em;
+}
+
+#postBody {
+    border: none;
+    background: #c7cf84;
+    width: 100%;
+    height: 10vh;
+    display: block;
+    font-size: 1.3em;
+    padding: 0.2em;
+}
+
+.post:hover {
+    /* background-color: #f6fa48; */
+    cursor: pointer;
+    border-left: 0.5em solid #d52e12;
+}
+
+.post {
+    background-color: #f2f2f2;
+    margin-top: 1em;
+    font-family: sans-serif;
+    list-style-type: none;
+    padding: 0.5em;
+    padding-right: 0;
+    border-left: 0.5em solid #b8b8b4;
+}
+
+.postHead {
+    display: inline-flex;
+    float: right;
+}
+
+.postHeadChild {
+    padding-right: 1em;
+    color: #91ba03;
+    font-size: 0.7em;
+    font-weight: bold;
+}
+
+.postBody {
+    color: #4f4333;
+}
+
+.postTitle {
+    font-weight: bold;
+}
+
+.postInfo {
+    color: white;
+    font-size: 0.8em;
+    margin-right: 1em;
+    border-radius: 0.2em;
+    padding-top: 1em;
+}
+
+.postInfo>div>a {
+    color: white;
+}
+
+.showTagInput {
+    background-color: #e700a4;
+    padding: 0.3em;
+    color: white;
+    border-radius: 0.2em;
+    font-size: 0.8em;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+.replyButt {
+    background-color: #21a9a2;
+    float: right;
+}
+
+.hiddenTagDiv {
+    display: none;
+}
+
+.replyPost {
+    margin-left: 1em;
+}
+
+.genericButt {
+    text-decoration: none;
+    color: white;
+    padding-top: 0.2em;
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+    text-transform: uppercase;
+    border-radius: 0.2em;
+    padding: 0.4em;
+    display: block;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+.loginButt {
+    background-color: #f7f700;
+    border: 1px solid black;
+    color: black;
+}
+
+.homeButt {
+    background-color: #e17804;
+    color: black;
+}
+
+.newPostButt {
+    background: #91ba03;
+}
+
+.loginFormButt {
+    user-select: none;
+    color: white;
+    display: inline;
+    padding: 0.3em;
+    text-transform: uppercase;
+    border-radius: 0.2em;
+}
+
+#signinButt {
+    background-color: #91ba03;
+}
+
+#signupButt {
+    background-color: #15b5b5;
+}
