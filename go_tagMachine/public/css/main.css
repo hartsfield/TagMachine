@@ -1,0 +1,50 @@
+* {
+  padding: 0;
+  margin: 0;
+  font-family: sans;
+}
+
+body {
+  /* margin-left: 20%; */
+  /* margin-right: 20%; */
+}
+
+form {
+  display: inline;
+}
+
+.collapse{
+  cursor: pointer;
+  padding: 0.2em;
+}
+
+.collapse + input{
+  display: none; /* hide the checkboxes */
+}
+
+.collapse + input + div{
+  display:none;
+}
+
+.collapse + input:checked + div{
+  display:block;
+}
+
+.formDiv {
+  display: inline;
+}
+
+.formDiv > textarea {
+  display: block;
+}
+
+.top-level {
+  margin: 0;
+  border-top: 0;
+  margin-top: 1em;
+  background-color: #fcfcd8;
+}
+
+input:invalid {
+  background-color: #ffeaea;
+}
