@@ -70,6 +70,7 @@
     padding: 0.5em;
     padding-right: 0;
     border-left: 0.5em solid #b8b8b4;
+    overflow: auto;
 }
 
 .postHead {

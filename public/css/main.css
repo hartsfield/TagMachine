@@ -148,3 +148,18 @@ a {
 #donateButt {
     background-color: #d52e12;
 }
+
+.replySubmitButt {
+background-color: #d52e12;
+width: min-content;
+}
+
+.replyBody {
+        display: flex;
+    width: 100%;
+    padding: 0.2em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    background-color: #e0fabf;
+    border-radius: 0.2em;
+}

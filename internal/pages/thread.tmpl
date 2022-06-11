@@ -6,5 +6,14 @@
     {{ template "login" . }}
     {{ template "thread" .Thread }}
     {{ template "footer" . }}
+    <script type="text/javascript">
+      for (const tag in tags) {
+        document.getElementById("tag_"+tags[tag]).style.backgroundColor = "#91ba03";
+      }
+if (tags.length >= 1) {
+        document.getElementById("postButt").innerHTML = "Posting with #tags selected";
+      }
+    </script>
+
   </body>
 </html>

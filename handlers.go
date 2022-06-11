@@ -9,8 +9,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/go-redis/redis"
 )
 
 func signin(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +73,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	expire := time.Now().Add(10 * time.Minute)
 	cookie := http.Cookie{Name: "token", Value: "loggedout", Path: "/", Expires: expire, MaxAge: 0}
 	http.SetCookie(w, &cookie)
+	// TODO: remove cookie from db
 
 	ajaxResponse(w, map[string]string{"error": "false", "success": "true"})
 }
@@ -82,9 +81,10 @@ func logout(w http.ResponseWriter, r *http.Request) {
 func home(w http.ResponseWriter, r *http.Request) {
 	page := &pageData{}
 	cr := &credentials{}
-	for key := range Posts {
-		page.Posts = append(page.Posts, Posts[key]...)
-	}
+	// for key := range Posts {
+	// 	page.Posts = append(page.Posts, Posts[key]...)
+	// }
+	page.Posts = Frontpage["all"]
 	page.Tags = tags
 
 	c := r.Context().Value("credentials")
@@ -131,12 +131,21 @@ func checkAuth(next http.Handler) http.Handler {
 }
 
 func view(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	page := &pageData{}
+	page.Tags = tags
 	cr := &credentials{}
 	var p *postData
 
-	data := client.HGetAll(r.Form["postNum"][0]).Val()
+	data, err := client.HGetAll("OBJECT:" + r.Form["postNum"][0]).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	childs := getChildren(r.Form["postNum"][0])
 	if data["body"] != "" && data["ID"] != "" {
 		p = makePost(data)
@@ -162,7 +171,7 @@ func view(w http.ResponseWriter, r *http.Request) {
 	}
 	page.UserData = cr
 
-	err := templates.ExecuteTemplate(w, "thread.tmpl", page)
+	err = templates.ExecuteTemplate(w, "thread.tmpl", page)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -170,10 +179,18 @@ func view(w http.ResponseWriter, r *http.Request) {
 
 func userPosts(w http.ResponseWriter, r *http.Request) {
 	name := strings.Split(r.URL.Path, "/")[2]
-	posts, _ := client.ZRevRangeByScore(name+":POSTS:", redis.ZRangeBy{Max: "100000"}).Result()
+	posts, err := client.ZRevRange(name+":POSTS:", 0, -1).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	Posts[name] = nil
 	for _, post := range posts {
-		data, _ := client.HGetAll(post).Result()
+		data, err := client.HGetAll("OBJECT:" + post).Result()
+		if err != nil {
+			fmt.Println(err)
+		}
+
 		Posts[name] = append(Posts[name], makePost(data))
 	}
 
@@ -193,7 +210,7 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page.UserData = &credentials{}
-	err := templates.ExecuteTemplate(w, "home.tmpl", page)
+	err = templates.ExecuteTemplate(w, "home.tmpl", page)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -203,19 +220,19 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 	p, err := marshalpostData(r)
 	if err != nil {
 		fmt.Println(err)
-		ajaxResponse(w, map[string]string{"error": "true"})
+		ajaxResponse(w, map[string]string{"success": "false", "error": "Bad JSON sent to server"})
 		return
 	}
 
 	b_tags, err := json.Marshal(p.Tags)
 	if err != nil {
 		fmt.Println(err)
-		ajaxResponse(w, map[string]string{"error": "true"})
+		ajaxResponse(w, map[string]string{"success": "false", "error": "Bad JSON in tags"})
 		return
 	}
 
 	c := r.Context().Value("credentials")
-	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
+	if a, ok := c.(*credentials); ok && a.IsLoggedIn && len(p.Body) > 8 {
 		postID := genPostID(15)
 		post := map[string]interface{}{
 			"title":   p.Title,
@@ -227,22 +244,45 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 			"tags":   b_tags,
 		}
 
-		_, err := client.HMSet(postID, post).Result()
+		_, err := client.HMSet("OBJECT:"+postID, post).Result()
 		if err != nil {
 			fmt.Println(err)
-			ajaxResponse(w, map[string]string{"error": "true"})
+			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
 			return
 		}
 
 		zmem := makeZmem(postID)
 		for _, tag := range p.Tags {
-			zmem2 := makeZmem(tag)
-			client.ZAdd("TAGS", zmem2).Result()
-			client.ZAdd(tag, zmem)
-		}
-		client.ZAdd(a.Name+":POSTS:", zmem)
+			_, err := client.ZIncrBy("TAGS", 1, tag).Result()
+			if err != nil {
+				fmt.Println(err)
+				ajaxResponse(w, map[string]string{"success": "false", "error": "Bad tag"})
+				return
+			}
 
-		ajaxResponse(w, map[string]string{"error": "false"})
+			_, err = client.ZAdd(tag, zmem).Result()
+			if err != nil {
+				fmt.Println(err)
+				ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
+				return
+			}
+
+		}
+		_, err = client.ZAdd(a.Name+":POSTS:", zmem).Result()
+		if err != nil {
+			fmt.Println(err)
+			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
+			return
+		}
+
+		_, err = client.ZAdd("ALLPOSTS", zmem).Result()
+		if err != nil {
+			fmt.Println(err)
+			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
+			return
+		}
+
+		ajaxResponse(w, map[string]string{"success": "true", "error": "nil"})
 	}
 }
 
@@ -251,14 +291,15 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 	p, err := marshalpostData(r)
 	if err != nil {
 		fmt.Println(err)
+		ajaxResponse(w, map[string]string{"success": "false", "error": "Bad data"})
+		return
 	}
 
-	fmt.Println(p.ID)
-	bubbleUp(p.ID)
+	postID := genPostID(15)
+	bubbleUp(p.ID, postID, p.Tags)
 
 	c := r.Context().Value("credentials")
 	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
-		postID := genPostID(15)
 		post := map[string]interface{}{
 			"body":    p.Body,
 			"ID":      postID,
@@ -266,22 +307,59 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 			"parent":  p.ID,
 			"author":  a.Name,
 		}
-		client.HMSet(postID, post)
+		_, err = client.HMSet("OBJECT:"+postID, post).Result()
+		if err != nil {
+			fmt.Println(err)
+			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
+			return
+		}
 
 		zmem := makeZmem(postID)
-		client.ZAdd(p.ID+":CHILDREN", zmem)
+		_, err = client.ZAdd(p.ID+":CHILDREN", zmem).Result()
+		if err != nil {
+			fmt.Println(err)
+			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
+			return
+		}
 
-		ajaxResponse(w, map[string]string{"error": "nil", "ID": postID})
+		_, err := client.ZAdd(a.Name+":POSTS:", zmem).Result()
+		if err != nil {
+			fmt.Println(err)
+			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
+			return
+		}
+
+		if len(p.Tags) >= 1 {
+			_, err := client.ZIncrBy("ALLPOSTS", 1, p.ID).Result()
+			if err != nil {
+				fmt.Println(err)
+				ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
+				return
+			}
+			for _, tag := range p.Tags {
+				_, err := client.ZIncrBy(tag, 1, p.ID).Result()
+				if err != nil {
+					fmt.Println(err)
+					ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
+					return
+				}
+			}
+		}
+
+		ajaxResponse(w, map[string]string{"success": "true", "error": "nil"})
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	ajaxResponse(w, map[string]string{"error": "not logged in", "success": "false"})
 }
 
 func getTags(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	page := &pageData{}
 	url_tags := strings.Split(r.Form["tags"][0], ",")
-	fmt.Println(url_tags)
 
 	// TODO  *IMPORTANT*
 	// someone could send unknown tags in a xhr request, need to check if
@@ -304,7 +382,7 @@ func getTags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	page.UserData = &credentials{}
-	err := templates.ExecuteTemplate(w, "home.tmpl", page)
+	err = templates.ExecuteTemplate(w, "home.tmpl", page)
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -62,6 +62,7 @@ var (
 	templates        = template.Must(template.New("main").ParseGlob("internal/*/*.tmpl"))
 	hmacSampleSecret = []byte("0r9ck0r9cr09kcr09kcreiwn fwn f0ewf0ewncremcrecm")
 	Posts            = make(map[string][]*postData)
+	Frontpage        = make(map[string][]*postData)
 	tags             = []string{"politics", "stem", "arts", "sports", "other"}
 )
 
@@ -82,7 +83,7 @@ func main() {
 	mux.Handle("/tag/", checkAuth(http.HandlerFunc(getTags)))
 	mux.Handle("/api/newthread", checkAuth(http.HandlerFunc(newThread)))
 	mux.Handle("/api/reply", checkAuth(http.HandlerFunc(newReply)))
-	mux.HandleFunc("/view/", view)
+	mux.Handle("/view/", checkAuth(http.HandlerFunc(view)))
 	mux.HandleFunc("/api/signup", signup)
 	mux.HandleFunc("/api/signin", signin)
 	mux.HandleFunc("/api/logout", logout)

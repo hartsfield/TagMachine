@@ -92,18 +92,6 @@ func genPostID(length int) (ID string) {
 	return
 }
 
-// func init() {
-// 	posts, _ := client.ZRevRangeByScore("FRONTPAGE:", redis.ZRangeBy{Max: "100000"}).Result()
-// 	for _, post := range posts {
-// 		data, _ := client.HGetAll("POSTS:" + post).Result()
-// 		Posts["FRONTPAGE"] = append(Posts["FRONTPAGE"], &postData{
-// 			ID:     data["ID"],
-// 			Body:   data["body"],
-// 			Author: data["author"],
-// 		})
-// 	}
-// }
-
 func ajaxResponse(w http.ResponseWriter, res map[string]string) {
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(res)
@@ -136,19 +124,25 @@ func marshalCredentials(r *http.Request) (*credentials, error) {
 
 // bubbleUp increments the scores of all the parents when a post is replied
 // to. Also increments the reply count.
-func bubbleUp(parent string) {
-	pa := client.HMGet(parent, "ID").Val()
-	client.ZIncrBy(pa[0].(string), 1, "Score")
-	client.Incr("replyCount:" + parent)
-	grandParent, err := client.HMGet(parent, "parent").Result()
+func bubbleUp(parent string, child string, ptags []string) {
+	client.ZIncrBy(parent+":CHILDREN", 1, child)
+	grandParent, err := client.HMGet("OBJECT:"+parent, "parent").Result()
 	if err == nil && grandParent[0] != nil {
-		bubbleUp(grandParent[0].(string))
-		client.ZIncrBy(grandParent[0].(string), 1, parent)
+		bubbleUp(grandParent[0].(string), parent, ptags)
+	} else if err != nil {
+		fmt.Println(err)
+	} else if len(tags) >= 1 {
+		client.ZIncrBy("ALLPOSTS", 1, parent)
+		for _, tag := range ptags {
+			client.ZIncrBy(tag, 1, parent)
+		}
+
 	}
 	return
 }
 
 func makePost(data map[string]string) *postData {
+	// fmt.Println("mkpst", data)
 	var arr []string
 	_ = json.Unmarshal([]byte(data["tags"]), &arr)
 	return &postData{
@@ -160,9 +154,5 @@ func makePost(data map[string]string) *postData {
 		TS:       data["created"],
 		Author:   data["author"],
 		Tags:     arr,
-		// Title:  data["title"],
-		// Random: keyMap[ip].Key,
-		// ReplyCount: client.Get("replyCount:" + data["ID"]).Val()
-		// Tags:       strings.Split(data["tags"], " "),
 	}
 }

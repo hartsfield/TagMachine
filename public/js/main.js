@@ -1,6 +1,9 @@
-var tags = (window.location.search.substring(window.location.search.indexOf('=')).substring(1).split(",").filter(v => v));
-if (window.location.search.length > 0 && tags.length <= 0) {
-    window.location = window.location.origin;
+var tags = [];
+if (window.location.href.includes("tags")) {
+tags = (window.location.search.substring(window.location.search.indexOf('=')).substring(1).split(",").filter(v => v));
+        if (window.location.search.length > 0 && tags.length <= 0 && !window.location.href.includes("Num=")) {
+            window.location = window.location.origin;
+}
 }
 
 function showLogin() {
@@ -22,8 +25,10 @@ function showPostForm() {
 function showReplyForm(id) {
     if (document.getElementById("replyForm_" + id).style.display == "none") {
         document.getElementById("replyForm_" + id).style.display = "unset";
+        document.getElementById("showReplyFormButt_" + id).innerHTML = "- REPLY";
     } else {
         document.getElementById("replyForm_" + id).style.display = "none";
+        document.getElementById("showReplyFormButt_" + id).innerHTML = "+ REPLY";
     }
 }
 
@@ -74,6 +79,28 @@ function reply(id, parent) {
     }));
 }
 
+function replyThread(id, parent, pTags) {
+        console.log(id, parent, pTags);
+    var xhr = new XMLHttpRequest();
+
+    xhr.open('POST', '/api/reply');
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.success == "true") {
+            } else {
+            }
+        }
+    };
+
+    xhr.send(JSON.stringify({
+                body: document.getElementById("replyBody_" + id).value,
+                ID: id,
+                Tags: pTags,
+                parent: parent,
+    }));
+}
 function setTag(tag) {
     if (tags.includes(tag)) {
         tags = tags.filter(x => x !== tag);

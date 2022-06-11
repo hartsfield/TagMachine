@@ -158,9 +158,10 @@ func makePosts(tags []string) {
 	var newMap map[string]interface{}
 	data, _ := json.Marshal(post)
 	json.Unmarshal(data, &newMap)
-	client.HMSet(postID, newMap)
+	client.HMSet("OBJECT:"+postID, newMap)
 
 	client.ZAdd("JOHN:POSTS:", makeZmem(postID))
+	client.ZAdd("ALLPOSTS", makeZmem(postID))
 
 	for _, tag := range tags {
 		client.ZAdd(tag, makeZmem(postID))
@@ -169,9 +170,10 @@ func makePosts(tags []string) {
 
 func makeTagsForPost() []string {
 	tags := []string{"politics", "stem", "arts", "other", "sports"}
-	a := make([]string, rand.Intn(len(tags)))
+	a := make([]string, rand.Intn(len(tags))+1)
 	for i := range a {
-		a[i] = tags[rand.Intn(len(tags))]
+		b := rand.Intn(len(tags))
+		a[i] = tags[b]
 	}
 	return a
 }

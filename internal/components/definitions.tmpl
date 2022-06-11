@@ -70,11 +70,11 @@
                                                 {{end}}
 
                                                 <div class="showTagInput replyButt">
-                                                        <a onclick="showReplyForm({{$value.ID}})">+reply</a>                                                                                                                                                
+                                                        <div id="showReplyFormButt_{{$value.ID}}" onclick="showReplyForm({{$value.ID}})">+ REPLY</div> 
                                                 </div>                                                                                                                                                
                                                 <div id="replyForm_{{$value.ID}}" style="display: none">
-                                                        <textarea id="replyBody_{{$value.ID}}"></textarea>
-                                                        <div onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
+                                                        <textarea class="replyBody" id="replyBody_{{$value.ID}}"></textarea>
+                                                        <div class="genericButt replySubmitButt" onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
                                                 </div>
                                         </div>
                                 </li>                                                                                                                                                     
@@ -101,8 +101,8 @@
                                 <a onclick="showReplyForm({{.Thread.ID}})">+reply</a>                                                                                                                                                
                         </div>                                                                                                                                                
                         <div id="replyForm_{{.Thread.ID}}" style="display: none">
-                                <textarea id="replyBody_{{.Thread.ID}}"></textarea>
-                                <div onClick="reply({{.Thread.ID}}, {{.Thread.Parent}})">reply</div>
+                                <textarea class="replyBody" id="replyBody_{{.Thread.ID}}"></textarea>
+                                <div class="genericButt replySubmitButt" onClick="replyThread({{.Thread.ID}}, {{.Thread.Parent}}, {{.Thread.Tags}})">reply</div>
                         </div>
                 </div>
         </div>
@@ -114,11 +114,30 @@
 {{define "replies"}}
         <ul>
                 {{ range $key, $value := . }}
-                        <li class="post" id="postID_{{ $value.ID }}">
-                                <div class="postBody">{{ $value.Body }} {{$value.ID}}</div>
+                        <li class="post">                                                                                                                                         
+                                <a href="/view/?postNum={{ $value.ID  }}">
+                                        <div class="postHead">
+                                                <div class="postHeadChild" id="author_{{$value.ID}}">By: {{ $value.Author }}</div>
+                                                <div class="postHeadChild" id="postID_{{$value.ID}}"> on {{ $value.TS }}</div>
+                                        </div>
+                                        <div class="postBody postTitle">{{ $value.Title }}</div>
+                                        <div class="postBody">{{ $value.Body }}</div>
+                                </a>                                                                                                                                                    
+                                <div class="postInfo">
+                                        {{ range $k, $t := .Tags }}
+                                                <div class="showTagInput" onClick="showTagger({{ $value.ID }})">#{{$t}}</div>
+                                        {{end}}
 
+                                        <div class="showTagInput replyButt">
+                                                <a onclick="showReplyForm({{$value.ID}})">+reply</a>                                                                                                                                                
+                                        </div>                                                                                                                                                
+                                        <div id="replyForm_{{$value.ID}}" style="display: none">
+                                                <textarea class="replyBody" id="replyBody_{{$value.ID}}"></textarea>
+                                                <div class="genericButt replySubmitButt" onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
+                                        </div>
+                                </div>
                                 {{template "replies" $value.Children }}
-                        </li>
+                        </li> 
                 {{end}}
         </ul>
 {{end}}
