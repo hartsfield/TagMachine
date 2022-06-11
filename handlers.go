@@ -41,6 +41,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	c, err := marshalCredentials(r)
 	if err != nil {
 		log.Println(err)
+		ajaxResponse(w, map[string]string{"success": "false", "error": "Invalid Credentials"})
+		return
 	}
 
 	_, err = client.Get(c.Name).Result()
