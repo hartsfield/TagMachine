@@ -59,7 +59,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			ajaxResponse(w, map[string]string{"success": "false", "error": "Invalid Username"})
 			return
 		}
-		if match && (len(c.Name) < 25) {
+
+		if match && (len(c.Name) < 25) && (len(c.Name) > 3) && (len(c.Password) > 7) {
 			client.Set(c.Name, hash, 0)
 			setTokenCookie(w, r, c)
 			ajaxResponse(w, map[string]string{"success": "true", "error": "false"})
