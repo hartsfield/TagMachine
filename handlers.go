@@ -217,7 +217,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 		postID := genPostID(15)
 		post := map[string]interface{}{
 			"title":   p.Title,
-			"body":    p.Body,
+			"body":    string(p.Body),
 			"ID":      postID,
 			"created": time.Now().Format("Mon Jan 2 15:04:05 -0700 MST 2006"),
 			"author":  a.Name,
