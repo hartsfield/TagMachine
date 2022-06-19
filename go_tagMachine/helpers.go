@@ -223,7 +223,7 @@ func makePosts(tags []string) {
 	}
 }
 
-var authors = []string{"John", "Mathew", "Mark", "Luke", "Amanda", "Michelle"}
+var authors = []string{"John", "Chuckie", "Phil", "Tommy", "Stew", "Lillian"}
 
 func makeReply(parent string, ptags []string) {
 	postID := genPostID(15)
