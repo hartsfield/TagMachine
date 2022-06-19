@@ -4,6 +4,17 @@
     padding: 0;
 }
 
+@media screen and (orientation:landscape) {
+    body {
+        margin-left: 20%;
+        margin-right: 20%;
+    }
+}
+
+::selection {
+    background: red;
+}
+
 body {
     /* margin-left: 20%; */
     /* margin-right: 20%; */
@@ -20,14 +31,19 @@ input {
     padding: 0.2em;
 }
 
-input:invalid {
-    background-color: #e700a4;
-}
+/* input:invalid { */
 
-input:valid {
-    background-color: #91ba03;
-    color: white;
-}
+/*     background-color: #e700a4; */
+
+/* } */
+
+/* input:valid { */
+
+/*     background-color: #91ba03; */
+
+/*     color: white; */
+
+/* } */
 
 input:focus {
     outline: none;
@@ -65,11 +81,13 @@ a {
 
 /* } */
 
-/* #tagInput { */
-
-/*   display: inline-block;; */
-
-/* } */
+#tagInput {
+    display: inline-block;
+    ;
+    border-radius: 0 0 0.3em 0.3em;
+    color: white;
+    background-color: #adba03;
+}
 
 #newPostForm {
     margin-left: 1em;
@@ -91,10 +109,16 @@ a {
     #password {
         margin-top: 0.5em
     }
+    .postBodyTextArea {
+        width: 100%;
+    }
 }
 
 .titleInput {
     border: none;
+    border-radius: 0.3em 0.3em 0em 0em;
+    /* background-color: #21a9a2; /*darker blue*/
+    background-color: #adba03;
 }
 
 .loginInput {
@@ -131,6 +155,14 @@ a {
     text-transform: uppercase;
 }
 
+#replyError {
+    color: #d52e12;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding-bottom: 1.5em;
+}
+
 #logoutButt {
     background-color: #e17804;
 }
@@ -150,16 +182,30 @@ a {
 }
 
 .replySubmitButt {
-background-color: #d52e12;
-width: min-content;
+    background-color: #d52e12;
+    width: min-content;
 }
 
 .replyBody {
-        display: flex;
+    display: flex;
     width: 100%;
     padding: 0.2em;
     margin-top: 1em;
     margin-bottom: 1em;
     background-color: #e0fabf;
     border-radius: 0.2em;
+}
+
+.rulesButt {
+    background-color: #91bb13;
+}
+
+.mention {
+    display: inline;
+    color: #85ac4f;
+    background: #fcfcd8;
+    border-radius: 0.4em;
+    padding-left: 0.2em;
+    padding-right: 0.2em;
+    font-weight: bold;
 }

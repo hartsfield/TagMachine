@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
 )
 
@@ -19,6 +19,7 @@ type credentials struct {
 	Password   string   `json:"password"`
 	IsLoggedIn bool     `json:"isLoggedIn"`
 	Posts      []string `json:"posts"`
+	Score      uint     `json:"score"`
 	jwt.StandardClaims
 	// IP         string `json:"IP"`
 	// HasGoogle  bool   `json:"hasGoogle"`
@@ -27,10 +28,11 @@ type credentials struct {
 }
 
 type pageData struct {
-	UserData *credentials `json:"userData"`
-	Posts    []*postData  `json:"posts"`
-	Tags     []string     `json:"tags"`
-	Thread   *threadData
+	UserData    *credentials `json:"userData"`
+	Posts       []*postData  `json:"posts"`
+	DefaultTags []string     `json:"defaultTags"`
+	Tags        []string     `json:"tags"`
+	Thread      *threadData
 }
 
 type threadData struct {
@@ -41,15 +43,21 @@ type threadData struct {
 }
 
 type postData struct {
-	Title    string `json:"title"`
-	Body     string `json:"body"`
-	ID       string `json:"ID"`
-	Author   string `json:"author"`
-	Parent   string `json:"parent"`
+	Title    string        `json:"title"`
+	Body     template.HTML `json:"body"`
+	ID       string        `json:"ID"`
+	Author   string        `json:"author"`
+	Parent   string        `json:"parent"`
 	Children []*postData
 	TS       string   `json:"timestamp"`
 	Tags     []string `json:"tags"`
 }
+
+type ckey int
+
+const (
+	ctxkey ckey = iota
+)
 
 var (
 	redisIP = os.Getenv("redisIP")
@@ -61,19 +69,20 @@ var (
 
 	templates        = template.Must(template.New("main").ParseGlob("internal/*/*.tmpl"))
 	hmacSampleSecret = []byte("0r9ck0r9cr09kcr09kcreiwn fwn f0ewf0ewncremcrecm")
-	Posts            = make(map[string][]*postData)
-	Frontpage        = make(map[string][]*postData)
-	tags             = []string{"politics", "stem", "arts", "sports", "other"}
+	posts            = make(map[string][]*postData)
+	frontpage        = make(map[string][]*postData)
+	tags             = []string{}
+	defaultTags      = []string{"politics", "stem", "arts", "other", "sports"}
+	ctx              = context.Background()
 )
 
 func main() {
 	fmt.Println("Sending ping() to redis")
-	rs := client.Ping()
-	str, err := rs.Result()
+	rs, err := client.Ping(ctx).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(str)
+	fmt.Println(rs)
 
 	rand.Seed(time.Now().UTC().UnixNano())
 

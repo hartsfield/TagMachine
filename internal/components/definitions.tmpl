@@ -17,13 +17,18 @@
                                 <li class="loginButt genericButt" onClick="showLogin()">LOGIN</li>
                         {{ end }}
                         <li class="homeButt genericButt"><div><a href="/">###</a></div></li>
-                        {{ range $key, $tag := .Tags }}
-                                <li id="tag_{{ $tag }}" class="tagButt genericButt" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
-                        {{ end }}
-                        <li class="showTrending genericButt" onClick="getTrending()" >trends ➡</li>  
                         {{ if .UserData.IsLoggedIn }}
                                 <li class="newPostButt genericButt" onClick="showPostForm()">POST</li>               
                         {{ end }}
+
+                        {{ range $key, $tag := .DefaultTags }}
+                                <li id="tag_{{ $tag }}" class="defaultTagButt genericButt" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
+                        {{ end }}
+
+                        {{ range $key, $tag := .Tags }}
+                                <li id="tag_{{ $tag }}" class="trending tagButt genericButt"  style="display: none" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
+                        {{ end }}
+                        <li class="showTrending genericButt" id="showTags" onClick="showTrending()" >trends ➡</li>  
                 </ul>                                                              
         </div>                                                               
 {{ end }}
@@ -32,7 +37,7 @@
         <form id="loginForm" method="post" style="display: none">
                 <div class="formDiv post">
                         <input id="username" class="loginInput" name="username" placeholder="username" required maxlength="27" minlength="2"/>
-                        <input id="password" class="loginInput" name="password" type="password" placeholder="password" required minlength="8" maxlength="27"/>
+                        <input id="password" class="loginInput passwordInput" name="password" type="password" placeholder="password" required minlength="8" maxlength="27"/>
                         <div id="errorField"></div>
                         <div id="formButts">
                                 <div class="loginFormButt" id="signinButt" onClick="auth('signin')">signin</div>
@@ -44,17 +49,17 @@
 
 {{ define "postForm" }}
         <form id="newPostForm" method="post" style="display: none">
-                <input class="titleInput" name="title" placeholder="title"/>
-                <textarea id="postBody" name="postBody" placeholder="Content" required minlength="8" maxlength="2500"></textarea>
-                <!-- <input id="postSubmitButt"type="submit" value="post" formaction="/api/newthread"/> -->
-                <div id="postButt" onClick="postThread()">Please pick at least one #tag from above and include some content</div>
+                <input class="titleInput" id="postTitle" name="title" placeholder="title" required minlength="2" maxlength="50"/>
+                <textarea id="postBody" class="postBodyTextArea" name="postBody" placeholder="Content" required minlength="8" maxlength="2500"></textarea>
+                <input id="taginput" class="titleInput tagInput" name="tags" placeholder="#TAGS" required minlength="5" maxlength="50"/>
+                <div class="postButt" id="postButt" onClick="postThread()">Post</div>
         </form>
 {{ end }}
 
 {{ define "frontpagePosts" }}
         <div id="posts">                                                                                                                                                
                 <ul>                                                                                                                                                          
-                        {{ range $key, $value := .}}                                                                                                                        
+                        {{ range $key, $value := .Posts}}                                                                                                                        
                                 <li class="post">                                                                                                                                         
                                         <a href="/view/?postNum={{ $value.ID  }}">
                                                 <div class="postHead">
@@ -65,15 +70,15 @@
                                                 <div class="postBody">{{ $value.Body }}</div>
                                         </a>                                                                                                                                                    
                                         <div class="postInfo">
-                                                {{ range $k, $t := .Tags }}
+                                                {{ range $k, $t := $value.Tags }}
                                                         <div class="showTagInput" onClick="showTagger({{ $value.ID }})">#{{$t}}</div>
                                                 {{end}}
-
-                                                <div class="showTagInput replyButt">
-                                                        <div id="showReplyFormButt_{{$value.ID}}" onclick="showReplyForm({{$value.ID}})">+ REPLY</div> 
-                                                </div>                                                                                                                                                
+                                                        <div class="showTagInput replyButt">
+                                                                <div id="showReplyFormButt_{{$value.ID}}" onclick="showReplyForm({{$value.ID}})">+REPLY</div> 
+                                                        </div>                                                                                                                                                
                                                 <div id="replyForm_{{$value.ID}}" style="display: none">
                                                         <textarea class="replyBody" id="replyBody_{{$value.ID}}"></textarea>
+                                                        <div id="replyError"></div>
                                                         <div class="genericButt replySubmitButt" onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
                                                 </div>
                                         </div>
@@ -97,11 +102,17 @@
                                 <div class="showTagInput" onClick="showTagger()">#{{$t}}</div>
                         {{end}}
 
+                        {{ if .Thread.Parent }}
+                                <div class="showTagInput contextButt">
+                                        <a onclick="viewContext({{.Thread.Parent}})">context</a>                                                                                                                                                
+                                </div>                                                                                                                                                
+                        {{ end }}
                         <div class="showTagInput replyButt">
                                 <a onclick="showReplyForm({{.Thread.ID}})">+reply</a>                                                                                                                                                
                         </div>                                                                                                                                                
                         <div id="replyForm_{{.Thread.ID}}" style="display: none">
                                 <textarea class="replyBody" id="replyBody_{{.Thread.ID}}"></textarea>
+                                <div id="replyError"></div>
                                 <div class="genericButt replySubmitButt" onClick="replyThread({{.Thread.ID}}, {{.Thread.Parent}}, {{.Thread.Tags}})">reply</div>
                         </div>
                 </div>
@@ -133,6 +144,7 @@
                                         </div>                                                                                                                                                
                                         <div id="replyForm_{{$value.ID}}" style="display: none">
                                                 <textarea class="replyBody" id="replyBody_{{$value.ID}}"></textarea>
+                                                <div id="replyError"></div>
                                                 <div class="genericButt replySubmitButt" onClick="reply({{$value.ID}}, {{$value.Parent}})">reply</div>
                                         </div>
                                 </div>
@@ -154,6 +166,7 @@
                         {{ end }}
                         <div class="loginFormButt" id="contactButt" onClick="showContact()">Contact</div>
                         <div class="loginFormButt" id="donateButt" onClick="showCode()">Donate</div>
+                        <div class="loginFormButt rulesButt" id="rulesButt" onClick="showRules()">Rules</div>
                 </div>
         </div>
 {{end}}
