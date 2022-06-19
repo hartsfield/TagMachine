@@ -202,7 +202,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 
 	c := r.Context().Value(ctxkey)
 	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
-		if !verifyBody(string(p.Body)) || verifyTags(p.Tags) {
+		if !verifyBody(string(p.Body)) || !verifyTags(p.Tags) {
 			ajaxResponse(w, map[string]string{"success": "false", "error": "Text not allowed"})
 			return
 		}
