@@ -6,6 +6,9 @@ if (window.location.href.includes("tags")) {
     }
 }
 
+var loc = window.location.pathname.split("/");
+var uname = loc[loc.length - 1];
+
 var isTrendshowing = false;
 
 function showTrending() {

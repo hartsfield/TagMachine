@@ -7,7 +7,6 @@
                 <meta name="viewport" content="width=device-width, initial-scale=1">
         </head>
 {{ end }}
-
 {{ define "nav" }}
         <div class="mainNav">                                                
                 <ul>                                                               
@@ -25,6 +24,27 @@
                                 <li id="tag_{{ $tag }}" class="defaultTagButt genericButt" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
                         {{ end }}
 
+                        {{ range $key, $tag := .Tags }}
+                                <li id="tag_{{ $tag }}" class="trending tagButt genericButt"  style="display: none" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
+                        {{ end }}
+                        <li class="showTrending genericButt" id="showTags" onClick="showTrending()" >trends ➡</li>  
+                </ul>                                                              
+        </div>                                                               
+{{ end }}
+
+
+{{ define "threadNav" }}
+        <div class="mainNav">                                                
+                <ul>                                                               
+                        {{ if .UserData.IsLoggedIn }}
+                                <li class="loginButt genericButt"><div><a href="/user/{{ .UserData.Name }}">{{ .UserData.Name }}</a></div></li>
+                        {{ else }}
+                                <li class="loginButt genericButt" onClick="showLogin()">LOGIN</li>
+                        {{ end }}
+                        <li class="homeButt genericButt"><div><a href="/">###</a></div></li>
+                        {{ range $key, $tag := .DefaultTags }}
+                                <li id="tag_{{ $tag }}" class="defaultTagButt genericButt" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
+                        {{ end }}
                         {{ range $key, $tag := .Tags }}
                                 <li id="tag_{{ $tag }}" class="trending tagButt genericButt"  style="display: none" onClick="setTag({{ $tag }})">#{{ $tag }}</li>
                         {{ end }}

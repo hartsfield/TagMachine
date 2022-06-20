@@ -54,7 +54,7 @@ func renewToken(w http.ResponseWriter, r *http.Request, claims *credentials) (ct
 	cookie := http.Cookie{Name: "token", Value: ss, Path: "/", Expires: expire, MaxAge: 0}
 	http.SetCookie(w, &cookie)
 
-	client.Set(ctx, claims.Name+":token", ss, 0)
+	rdb.Set(ctx, claims.Name+":token", ss, 0)
 	ctxx = context.WithValue(r.Context(), ctxkey, claims)
 	return
 }
@@ -82,7 +82,7 @@ func setTokenCookie(w http.ResponseWriter, r *http.Request, c *credentials) (ctx
 	cookie := http.Cookie{Name: "token", Value: ss, Path: "/", Expires: expire, MaxAge: 0}
 	http.SetCookie(w, &cookie)
 
-	client.Set(ctx, c.Name+":token", ss, -1)
+	rdb.Set(ctx, c.Name+":token", ss, -1)
 	ctxx = context.WithValue(r.Context(), ctxkey, claims)
 	return
 }
@@ -130,12 +130,12 @@ func marshalCredentials(r *http.Request) (*credentials, error) {
 // bubbleUp increments the scores of all the parents when a post is replied
 // to. Also increments the reply count.
 func bubbleUp(parent string, newPostAuthor string) {
-	author, err := client.HMGet(ctx, "OBJECT:"+parent, "author").Result()
+	author, err := rdb.HMGet(ctx, "OBJECT:"+parent, "author").Result()
 	if err != nil {
 		fmt.Println(err)
 	}
 	if a, ok := author[0].(string); ok && len(a) > 2 {
-		grandParent, err := client.HMGet(ctx, "OBJECT:"+parent, "parent").Result()
+		grandParent, err := rdb.HMGet(ctx, "OBJECT:"+parent, "parent").Result()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -145,31 +145,31 @@ func bubbleUp(parent string, newPostAuthor string) {
 				bubbleUp(g, newPostAuthor)
 				return
 			}
-			client.ZIncrBy(ctx, "USERS", 1, a)
-			client.ZIncrBy(ctx, g+":CHILDREN", 1, parent)
+			rdb.ZIncrBy(ctx, "USERS", 1, a)
+			rdb.ZIncrBy(ctx, g+":CHILDREN", 1, parent)
 			bubbleUp(g, newPostAuthor)
 		} else {
 			if a != newPostAuthor {
-				client.ZIncrBy(ctx, "USERS", 1, a)
+				rdb.ZIncrBy(ctx, "USERS", 1, a)
 			}
-			tags, err := client.HMGet(ctx, "OBJECT:"+parent, "tags").Result()
+			tags, err := rdb.HMGet(ctx, "OBJECT:"+parent, "tags").Result()
 			if err != nil {
 				fmt.Println(err)
 			}
 			var tagsm []string
 			_ = json.Unmarshal([]byte(tags[0].(string)), &tagsm)
 			for _, tag := range tagsm {
-				_, err := client.ZIncrBy(ctx, "TAGS", 1, tag).Result()
+				_, err := rdb.ZIncrBy(ctx, "TAGS", 1, tag).Result()
 				if err != nil {
 					fmt.Println(err)
 				}
-				_, err = client.ZIncrBy(ctx, tag, 1, parent).Result()
+				_, err = rdb.ZIncrBy(ctx, tag, 1, parent).Result()
 				if err != nil {
 					fmt.Println(err)
 				}
 
 			}
-			_, err = client.ZIncrBy(ctx, "ALLPOSTS", 1, parent).Result()
+			_, err = rdb.ZIncrBy(ctx, "ALLPOSTS", 1, parent).Result()
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -194,12 +194,26 @@ func makePost(data map[string]string) *postData {
 
 func trimHashTags(htags []string) []string {
 	for k, tag := range htags {
-		i := strings.Index(tag, "#")
+		i := strings.LastIndex(tag, "#")
 		if i != -1 {
 			htags[k] = tag[i+1:]
 		}
 	}
-	return htags
+	return removeDuplicateStr(htags)
+}
+
+// [0] https://stackoverflow.com/questions/66643946/how-to-remove-duplicates-strings-or-int-from-slice-in-go
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		item = strings.ToLower(item)
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }
 
 func bytify(a any) ([]byte, error) {
@@ -241,19 +255,19 @@ func makePage() *pageData {
 	}
 }
 
-func exeTmpl(w http.ResponseWriter, r *http.Request, page *pageData) {
+func exeTmpl(w http.ResponseWriter, r *http.Request, page *pageData, tmpl string) {
 	c := r.Context().Value(ctxkey)
 	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
 		page.UserData = a
 
-		err := templates.ExecuteTemplate(w, "home.tmpl", page)
+		err := templates.ExecuteTemplate(w, tmpl, page)
 		if err != nil {
 			fmt.Println(err)
 		}
 		return
 	}
 
-	err := templates.ExecuteTemplate(w, "home.tmpl", page)
+	err := templates.ExecuteTemplate(w, tmpl, page)
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -4,7 +4,8 @@
   <body>
     {{ template "threadNav" . }}
     {{ template "login" . }}
-    {{ template "thread" .Thread }}
+    <div class="userPage" id="postUsername"></div>
+    {{ template "frontpagePosts" . }}
     {{ template "footer" . }}
     <script type="text/javascript">
       for (const tag in tags) {
@@ -13,6 +14,8 @@
 if (tags.length >= 1) {
         document.getElementById("postButt").innerHTML = "Posting with #tags selected";
       }
+
+document.getElementById("postUsername").innerHTML = "Posts by: " + uname;
     </script>
 
   </body>

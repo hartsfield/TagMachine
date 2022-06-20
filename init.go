@@ -31,13 +31,13 @@ func beginCache() {
 
 // getChildren loads the child replies recursively
 func getChildren(ID string) (childs []*postData) {
-	children, err := client.ZRevRange(ctx, ID+":CHILDREN", 0, -1).Result()
+	children, err := rdb.ZRevRange(ctx, ID+":CHILDREN", 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	for _, child := range children {
-		data, err := client.HGetAll(ctx, "OBJECT:"+child).Result()
+		data, err := rdb.HGetAll(ctx, "OBJECT:"+child).Result()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -51,7 +51,7 @@ func getChildren(ID string) (childs []*postData) {
 func getData() {
 	fmt.Println("GETDATA")
 	posts = make(map[string][]*postData)
-	tagmem, err := client.ZRevRange(ctx, "TAGS", 0, -1).Result()
+	tagmem, err := rdb.ZRevRange(ctx, "TAGS", 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -61,13 +61,13 @@ func getData() {
 		if !isDefaultTag(tag) {
 			tags = append(tags, tag)
 		}
-		dbPosts, err := client.ZRevRange(ctx, tag, 0, -1).Result()
+		dbPosts, err := rdb.ZRevRange(ctx, tag, 0, -1).Result()
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		for _, post := range dbPosts {
-			data, err := client.HGetAll(ctx, "OBJECT:"+post).Result()
+			data, err := rdb.HGetAll(ctx, "OBJECT:"+post).Result()
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -77,13 +77,13 @@ func getData() {
 	}
 
 	frontpage = make(map[string][]*postData)
-	dbPosts, err := client.ZRevRange(ctx, "ALLPOSTS", 0, -1).Result()
+	dbPosts, err := rdb.ZRevRange(ctx, "ALLPOSTS", 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	for _, dbPost := range dbPosts {
-		data, err := client.HGetAll(ctx, "OBJECT:"+dbPost).Result()
+		data, err := rdb.HGetAll(ctx, "OBJECT:"+dbPost).Result()
 		if err != nil {
 			fmt.Println(err)
 		}

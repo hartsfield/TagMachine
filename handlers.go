@@ -19,9 +19,7 @@ func signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ctx context.Context
-	ctx = context.WithValue(r.Context(), ctxkey, &credentials{})
-	hash, err := client.Get(ctx, c.Name).Result()
+	hash, err := rdb.Get(ctx, c.Name).Result()
 	if err != nil {
 		fmt.Println(err)
 		ajaxResponse(w, map[string]string{"success": "false", "error": "User doesn't exist"})
@@ -46,7 +44,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 
 	match, err := regexp.MatchString("^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$", c.Name)
 	if match && err == nil && (len(c.Name) < 25) && (len(c.Name) > 3) && (len(c.Password) > 7) {
-		_, err = client.Get(context.Background(), c.Name).Result()
+		_, err = rdb.Get(context.Background(), c.Name).Result()
 		if err != nil {
 			fmt.Println(err)
 			hash, err := hashPassword(c.Password)
@@ -56,9 +54,9 @@ func signup(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			client.Set(context.Background(), c.Name, hash, 0)
+			rdb.Set(context.Background(), c.Name, hash, 0)
 			setTokenCookie(w, r, c)
-			_, err = client.ZAdd(ctx, "USERS", makeZmem(c.Name)).Result()
+			_, err = rdb.ZAdd(ctx, "USERS", makeZmem(c.Name)).Result()
 			if err != nil {
 				fmt.Println(err)
 				ajaxResponse(w, map[string]string{"success": "false", "error": "Invalid Password"})
@@ -84,7 +82,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	client.Set(ctx, c.Name+":token", "loggedout", 0)
+	rdb.Set(ctx, c.Name+":token", "loggedout", 0)
 
 	expire := time.Now()
 	cookie := http.Cookie{Name: "token", Value: "loggedout", Path: "/", Expires: expire, MaxAge: 0}
@@ -110,7 +108,7 @@ func checkAuth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
-		tkn, _ := client.Get(ctx, c.Name+":token").Result()
+		tkn, _ := rdb.Get(ctx, c.Name+":token").Result()
 		if tkn == token.Value {
 
 			c.IsLoggedIn = true
@@ -125,7 +123,7 @@ func checkAuth(next http.Handler) http.Handler {
 func home(w http.ResponseWriter, r *http.Request) {
 	page := makePage()
 	page.Posts = frontpage["all"]
-	exeTmpl(w, r, page)
+	exeTmpl(w, r, page, "home.tmpl")
 }
 
 func view(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +132,7 @@ func view(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	data, err := client.HGetAll(context.Background(), "OBJECT:"+r.Form["postNum"][0]).Result()
+	data, err := rdb.HGetAll(context.Background(), "OBJECT:"+r.Form["postNum"][0]).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -151,26 +149,12 @@ func view(w http.ResponseWriter, r *http.Request) {
 	}
 	page := makePage()
 	page.Thread = d
-	c := r.Context().Value(ctxkey)
-	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
-		page.UserData = a
-
-		err := templates.ExecuteTemplate(w, "thread.tmpl", page)
-		if err != nil {
-			fmt.Println(err)
-		}
-		return
-	}
-
-	err = templates.ExecuteTemplate(w, "thread.tmpl", page)
-	if err != nil {
-		fmt.Println(err)
-	}
+	exeTmpl(w, r, page, "thread.tmpl")
 }
 
 func userPosts(w http.ResponseWriter, r *http.Request) {
 	name := strings.Split(r.URL.Path, "/")[2]
-	dbposts, err := client.ZRevRange(context.Background(), name+":POSTS:", 0, -1).Result()
+	dbposts, err := rdb.ZRevRange(context.Background(), name+":POSTS", 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -178,7 +162,7 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 
 	posts[name] = nil
 	for _, post := range dbposts {
-		data, err := client.HGetAll(context.Background(), "OBJECT:"+post).Result()
+		data, err := rdb.HGetAll(context.Background(), "OBJECT:"+post).Result()
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -189,7 +173,7 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 	page := makePage()
 	page.Posts = posts[name]
 
-	exeTmpl(w, r, page)
+	exeTmpl(w, r, page, "user.tmpl")
 }
 
 func newThread(w http.ResponseWriter, r *http.Request) {
@@ -217,14 +201,14 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 		postID := genPostID(15)
 		post := map[string]interface{}{
 			"title":   p.Title,
-			"body":    string(p.Body),
+			"body":    parseMentions(string(p.Body)),
 			"ID":      postID,
 			"created": time.Now().Format("Mon Jan 2 15:04:05 -0700 MST 2006"),
 			"author":  a.Name,
 			"tags":    bTags,
 		}
 
-		_, err = client.HMSet(ctx, "OBJECT:"+postID, post).Result()
+		_, err = rdb.HMSet(ctx, "OBJECT:"+postID, post).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
@@ -233,29 +217,29 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 
 		zmem := makeZmem(postID)
 		for _, tag := range p.Tags {
-			_, err := client.ZIncrBy(ctx, "TAGS", 1, tag).Result()
+			_, err := rdb.ZIncrBy(ctx, "TAGS", 1, tag).Result()
 			if err != nil {
 				fmt.Println(err)
-				client.ZAdd(ctx, "TAGS", makeZmem(tag))
+				rdb.ZAdd(ctx, "TAGS", makeZmem(tag))
 				// ajaxResponse(w, map[string]string{"success": "false", "error": "Bad tag"})
 				// return
 			}
 
-			_, err = client.ZAdd(ctx, tag, zmem).Result()
+			_, err = rdb.ZAdd(ctx, tag, zmem).Result()
 			if err != nil {
 				fmt.Println(err)
 				ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
 				return
 			}
 		}
-		_, err = client.ZAdd(ctx, a.Name+":POSTS:", zmem).Result()
+		_, err = rdb.ZAdd(ctx, a.Name+":POSTS", zmem).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
 			return
 		}
 
-		_, err = client.ZAdd(ctx, "ALLPOSTS", zmem).Result()
+		_, err = rdb.ZAdd(ctx, "ALLPOSTS", zmem).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "Error setting database object"})
@@ -291,7 +275,7 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 			"parent":  p.ID,
 			"author":  a.Name,
 		}
-		_, err = client.HMSet(ctx, "OBJECT:"+postID, post).Result()
+		_, err = rdb.HMSet(ctx, "OBJECT:"+postID, post).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
@@ -299,14 +283,14 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 		}
 
 		zmem := makeZmem(postID)
-		_, err = client.ZAdd(ctx, p.ID+":CHILDREN", zmem).Result()
+		_, err = rdb.ZAdd(ctx, p.ID+":CHILDREN", zmem).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
 			return
 		}
 
-		_, err = client.ZAdd(ctx, a.Name+":POSTS:", zmem).Result()
+		_, err = rdb.ZAdd(ctx, a.Name+":POSTS", zmem).Result()
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{"success": "false", "error": "db error"})
@@ -329,12 +313,12 @@ func getTags(w http.ResponseWriter, r *http.Request) {
 	urlTags := strings.Split(r.Form["tags"][0], ",")
 
 	page := makePage()
-	client.ZUnionStore(ctx, "tempstore", &redis.ZStore{Keys: urlTags}).Result()
-	dbposts, _ := client.ZRevRange(ctx, "tempstore", 0, -1).Result()
+	rdb.ZUnionStore(ctx, "tempstore", &redis.ZStore{Keys: urlTags}).Result()
+	dbposts, _ := rdb.ZRevRange(ctx, "tempstore", 0, -1).Result()
 	for _, dbpost := range dbposts {
-		obj, _ := client.HGetAll(ctx, "OBJECT:"+dbpost).Result()
+		obj, _ := rdb.HGetAll(ctx, "OBJECT:"+dbpost).Result()
 		page.Posts = append(page.Posts, makePost(obj))
 	}
 
-	exeTmpl(w, r, page)
+	exeTmpl(w, r, page, "home.tmpl")
 }
