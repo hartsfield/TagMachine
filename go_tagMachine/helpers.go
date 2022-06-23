@@ -246,7 +246,7 @@ func makeReply(parent string) {
 	// ptags = append(ptags, ptags2...)
 	postID := genPostID(15)
 	post := postData{
-		Title:  "This is a post title",
+		// Title:  "This is a post title",
 		Body:   template.HTML(pBody),
 		ID:     postID,
 		Parent: parent,

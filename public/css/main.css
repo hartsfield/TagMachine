@@ -1,5 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish&display=swap');
 * {
-    font-family: sans;
+    font-family: 'Mulish', sans-serif;
     margin: 0;
     padding: 0;
 }
@@ -12,12 +13,13 @@
 }
 
 ::selection {
-    background: red;
+    background: #ffc107;
 }
 
 body {
     /* margin-left: 20%; */
     /* margin-right: 20%; */
+    /* radial-gradient(#f4ffe0, transparent); */
 }
 
 form {

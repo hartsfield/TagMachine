@@ -128,17 +128,13 @@ func marshalCredentials(r *http.Request) (*credentials, error) {
 }
 
 // bubbleUp increments the scores of all the parents when a post is replied
-// to. Also increments the reply count.
 func bubbleUp(parent string, newPostAuthor string) {
 	author, err := rdb.HMGet(ctx, "OBJECT:"+parent, "author").Result()
-	if err != nil {
-		fmt.Println(err)
-	}
+	handleErr(err)
+
 	if a, ok := author[0].(string); ok && len(a) > 2 {
 		grandParent, err := rdb.HMGet(ctx, "OBJECT:"+parent, "parent").Result()
-		if err != nil {
-			fmt.Println(err)
-		}
+		handleErr(err)
 
 		if g, ok := grandParent[0].(string); ok && len(g) > 2 {
 			if a == newPostAuthor {
@@ -153,26 +149,18 @@ func bubbleUp(parent string, newPostAuthor string) {
 				rdb.ZIncrBy(ctx, "USERS", 1, a)
 			}
 			tags, err := rdb.HMGet(ctx, "OBJECT:"+parent, "tags").Result()
-			if err != nil {
-				fmt.Println(err)
-			}
+			handleErr(err)
 			var tagsm []string
 			_ = json.Unmarshal([]byte(tags[0].(string)), &tagsm)
 			for _, tag := range tagsm {
 				_, err := rdb.ZIncrBy(ctx, "TAGS", 1, tag).Result()
-				if err != nil {
-					fmt.Println(err)
-				}
+				handleErr(err)
 				_, err = rdb.ZIncrBy(ctx, tag, 1, parent).Result()
-				if err != nil {
-					fmt.Println(err)
-				}
+				handleErr(err)
 
 			}
 			_, err = rdb.ZIncrBy(ctx, "ALLPOSTS", 1, parent).Result()
-			if err != nil {
-				fmt.Println(err)
-			}
+			handleErr(err)
 		}
 	}
 }
@@ -286,4 +274,8 @@ func parseMentions(s string) string {
 
 	}
 	return strings.Join(w, " ")
+}
+
+func handleErr(e error) {
+	fmt.Println(e)
 }

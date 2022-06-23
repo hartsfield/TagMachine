@@ -49,12 +49,9 @@ func getChildren(ID string) (childs []*postData) {
 
 // getData gets the board data from redis
 func getData() {
-	fmt.Println("GETDATA")
 	posts = make(map[string][]*postData)
 	tagmem, err := rdb.ZRevRange(ctx, "TAGS", 0, -1).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
+	handleErr(err)
 
 	tags = []string{}
 	for _, tag := range tagmem {
@@ -62,15 +59,11 @@ func getData() {
 			tags = append(tags, tag)
 		}
 		dbPosts, err := rdb.ZRevRange(ctx, tag, 0, -1).Result()
-		if err != nil {
-			fmt.Println(err)
-		}
+		handleErr(err)
 
 		for _, post := range dbPosts {
 			data, err := rdb.HGetAll(ctx, "OBJECT:"+post).Result()
-			if err != nil {
-				fmt.Println(err)
-			}
+			handleErr(err)
 
 			posts[tag] = append(posts[tag], makePost(data))
 		}
@@ -78,15 +71,11 @@ func getData() {
 
 	frontpage = make(map[string][]*postData)
 	dbPosts, err := rdb.ZRevRange(ctx, "ALLPOSTS", 0, -1).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
+	handleErr(err)
 
 	for _, dbPost := range dbPosts {
 		data, err := rdb.HGetAll(ctx, "OBJECT:"+dbPost).Result()
-		if err != nil {
-			fmt.Println(err)
-		}
+		handleErr(err)
 
 		frontpage["all"] = append(frontpage["all"], makePost(data))
 	}

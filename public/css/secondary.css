@@ -98,16 +98,17 @@
 
 .postBody {
     color: #4f4333;
+    /* float: left; */
+    padding-bottom: 1em;
 }
 
 .postTitle {
     font-weight: bold;
-    padding-bottom: 0.5em;
 }
 
 .postInfo {
     color: white;
-    font-size: 0.8em;
+    /* font-size: 0.8em; */
     margin-right: 1em;
     border-radius: 0.2em;
     padding-top: 1em;
@@ -126,6 +127,9 @@
     display: inline-block;
     text-transform: uppercase;
         margin-bottom: 0.5em;
+        float: left;
+    margin-right: 0.4em;
+    margin-top: 1em;
 }
 
 .contextButt {
