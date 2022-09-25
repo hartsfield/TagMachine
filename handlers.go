@@ -415,8 +415,8 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 	// in unless you're a test bot. For testing TagMachine, we'll use
 	// another program called TagBot. (see: README.md).
 	c := r.Context().Value(ctxkey)
-	if a, ok := c.(*credentials); ok && a.IsLoggedIn || p.Testing == "testingPassword" {
-		if p.Testing == "testingPassword" {
+	if a, ok := c.(*credentials); ok && a.IsLoggedIn || p.Testing == testPass {
+		if p.Testing == testPass {
 			a = &credentials{Name: p.Author}
 		}
 		// Validate the data
@@ -508,8 +508,8 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 	// Check if the user is logged in. You can't post wothout being logged
 	// in.
 	c := r.Context().Value(ctxkey)
-	if a, ok := c.(*credentials); ok && a.IsLoggedIn || p.Testing == "testingPassword" {
-		if p.Testing == "testingPassword" {
+	if a, ok := c.(*credentials); ok && a.IsLoggedIn || p.Testing == testPass {
+		if p.Testing == testPass {
 			a = &credentials{Name: p.Author}
 		}
 		// validate the data

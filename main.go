@@ -168,6 +168,19 @@ const (
 )
 
 var (
+	// NOTE: The following two variables are initiated through your
+	// operating system environment variables and are required for
+	// TagMachine to work properly
+
+	// hmacss=hmac_sample_secret
+	// testPass=testingPassword
+
+	// hmacSampleSecret is used for creating the token
+	hmacSampleSecret = []byte(os.Getenv("hmacss"))
+
+	// testPass is used only for testing, must be at least 10 characters
+	testPass = getSecret()
+
 	// connect to redis
 	redisIP = os.Getenv("redisIP")
 	rdb     = redis.NewClient(&redis.Options{
@@ -179,9 +192,6 @@ var (
 	// HTML templates. We use them like components and compile them
 	// together at runtime.
 	templates = template.Must(template.New("main").ParseGlob("internal/*/*.tmpl"))
-	// hmacSampleSecret is used for creating the token
-	// set this with an environment variable
-	hmacSampleSecret = []byte(os.Getenv("hmacss"))
 	// posts is used when someone views user posts or a set of posts with
 	// certain tag(s).
 	posts = make(map[string][]*postData)

@@ -1,4 +1,4 @@
-<div style="font-size: 3em;">TagMachine</div>
+# #TagMachine
 
 NOTE: This program is still in alpha stages and is extremely unstable. Don't 
 expect it to be bug free. 
@@ -13,7 +13,10 @@ To run this program:
 * clone the repository and `cd` into the project directory
 * Start redis (generally `redis-server &`)
 * run this command with your personal environment variables for the `hmac` sample
-secret:
+secret and testing password:
 </a>
 
-    hmacss=YOUR_SECRET_PHRASE go run .
+    hmacss=YOUR_SECRET_PHRASE testPass=YOUR_TESTING_PASS go run .
+
+This will start TagMachine without any data. You can add test data using another 
+progam I'm creating as a test suite called TagBot.

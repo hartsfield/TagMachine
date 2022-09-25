@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -441,4 +442,13 @@ func addToDB(post map[string]interface{}, authorName string, postID string) erro
 	beginCache()
 
 	return nil
+}
+
+func getSecret() (testPass string) {
+	testPass = os.Getenv("testPass")
+	if len(testPass) < 10 {
+		log.Panic(`Testing password rejected, please see README for 
+		instructions on running TagMachine.`)
+	}
+	return
 }
