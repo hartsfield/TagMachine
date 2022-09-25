@@ -10,9 +10,9 @@ TagMachine requires Redis (6.0.16+) and has only been tested on Linux servers.
 
 To run this program: 
 
- - clone the repository and `cd` into the project directory
- - Start redis (generally `redis-server &`)
- - run this command with your personal environment variables for the `hmac` sample
+* clone the repository and `cd` into the project directory
+* Start redis (generally `redis-server &`)
+* run this command with your personal environment variables for the `hmac` sample
 secret:
 
 
