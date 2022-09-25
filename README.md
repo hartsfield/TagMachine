@@ -1,4 +1,4 @@
-# TagMachine
+<div style="font-size: 3em;">TagMachine</div>
 
 NOTE: This program is still in alpha stages and is extremely unstable. Don't 
 expect it to be bug free. 
