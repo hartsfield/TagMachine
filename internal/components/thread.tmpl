@@ -1,0 +1,36 @@
+<!--
+  thread is single thread view, showing the replies. This template references 
+  replies.tmpl near the bottom, and that's the template for the replies
+-->
+{{ define "thread" }}
+  <div class="post top-level">
+    <div class="postHead">
+      <div class="postHeadChild" id="author_{{.Thread.ID}}">By: <a class="nameLink" href="/user/{{ .Thread.Author }}">@{{ .Thread.Author }}</a></div>
+      <div class="postHeadChild" id="postID_{{.Thread.ID}}"> on {{ .Thread.TS }}</div>
+    </div>
+    <div class="postTitle">{{ .Thread.Title }}</div>
+    <div class="postBody">{{ .Thread.Body }}</div>
+
+    <div class="postInfo">
+      {{ range $k, $t := .Thread.Tags }}
+        <div class="showTagInput threadTags" onClick="showTagger()">#{{$t}}</div>
+      {{end}}
+
+      {{ if .Thread.Parent }}
+        <div class="showTagInput contextButt">
+          <a class="contextButtLink" onclick="viewContext({{.Thread.Parent}})">context</a>                                                                                                                                                
+        </div>                                                                                                                                                
+      {{ end }}
+      <div class="showTagInput replyButt" id="showReplyFormButt_{{.Thread.ID}}" onclick="showReplyForm({{.Thread.ID}})">+reply</a>                                                                                                                                                
+      </div>                                                                                                                                                
+      <div id="replyForm_{{.Thread.ID}}" style="display: none">
+        <textarea class="replyBody" id="replyBody_{{.Thread.ID}}"></textarea>
+        <div id="replyError_{{.Thread.ID}}" class="replyError"></div>
+        <div class="genericButt replySubmitButt" onClick="reply({{.Thread.ID}}, {{.Thread.Parent}})">reply</div>
+      </div>
+    </div>
+  </div>
+  <div id="posts">
+    <div class="replyPost">{{ template "replies" .Children }}</div>
+  </div>
+{{ end }}

@@ -1,12 +1,5 @@
-#!/bin/sh
-# while inotifywait -r -e modify ../reddipost; do
-#   go build
-#   ./redipost
-# done
-while true; do
-  go build
-  $@ &
-  PID=$!
-  inotifywait -r -e modify .
-  kill $PID
-done
+#!/bin/bash
+inotifywait -r -m -e modify . |
+   while read file_path file_event file_name; do
+       echo ${file_path}${file_name} event: ${file_event}
+   done

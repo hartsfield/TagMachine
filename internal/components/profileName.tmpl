@@ -1,0 +1,8 @@
+<!--
+  profileName is used to display the name of the of the user whose profile is 
+  being viewed. This is not necessarily the name of the logged in user. 
+  Ex. tagMachine.com/user/USERNAME takes you to a view of USERNAMES posts.
+-->
+{{ define "profileName" }}
+        <div class="userPage" id="postUsername">Posts by: {{ .UserView }}</div>
+{{ end }}

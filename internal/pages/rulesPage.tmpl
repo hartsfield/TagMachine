@@ -1,0 +1,15 @@
+<!--
+  rulesPage.tmpl is the rules page of tagmachine. When a user navigates to 
+  tagmachine.com/rules, they should see this page.
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+{{template "head"}}                                    
+  <body>
+    {{ template "nav" . }}
+    {{ template "login" . }}
+    {{ template "rules" }}
+    {{ template "footer" . }}
+    {{ template "colortags" }}
+  </body>
+</html>

@@ -1,0 +1,20 @@
+<!-- 
+  footer is the footer of the website, located at the bottom of the page. For 
+  v1.0 we have a yin yang symbol, a little slogan, and some buttons that allow 
+  you to logout, contact us, donate, and view the rules/about page.
+-->
+{{define "footer"}}
+  <div class="foot">
+    <div class="footCenter">
+      <div class="sym">☯</div>
+      <div class="povi">POSITIVE VIBES 4 EVER</div>
+    </div>
+    <!-- when #loadScroll is scrolled into view we load more posts -->
+   <div id="loadScroll"></div>
+    <div class="bottomInfo">
+      {{ if .UserData.IsLoggedIn }}
+        <div class="loginFormButt logoutButt" onClick="auth('logout')">logout</div>
+      {{ end }}
+    </div>
+  </div>
+{{end}}

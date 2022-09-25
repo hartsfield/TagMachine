@@ -1,0 +1,27 @@
+<!--
+  colortags is a snippet of javascript that needs to be executed after the DOM
+  loads. It's used to color the selected tags, and hide the auxiliary tags when
+  not selected. This effects both tags displayed in each thread, and the 
+  navigation bar.
+-->
+{{define "colortags"}}
+<script type="text/javascript">
+        for (var tag in tags) {
+            document.getElementById("tag_"+tags[tag]).style.backgroundColor = "#91ba03";
+            document.getElementById("tag_"+tags[tag]).style.color = "rgb(255 254 183)";
+            document.getElementById("tag_"+tags[tag]).style.border = "1px solid #6aa753";
+            threads = document.getElementsByClassName("threadTag_"+tags[tag]);
+            for (var i = 0; i < threads.length; i++) {
+                   selectedId = threads[i].getAttribute('id');
+                   document.getElementById(selectedId).style.backgroundColor = "91ba03";
+            }
+        }
+        if (tags.length > 0) {
+            isTrendshowing = false;
+            showTrending();
+        } else {
+            isTrendshowing = true;
+            showTrending();
+        }
+</script>
+{{end}}

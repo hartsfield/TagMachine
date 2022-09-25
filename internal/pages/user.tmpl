@@ -1,22 +1,15 @@
+<!-- 
+  user.tmpl is used to display a users posts
+-->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
 {{template "head"}}                                    
   <body>
-    {{ template "threadNav" . }}
+    {{ template "nav" . }}
     {{ template "login" . }}
-    <div class="userPage" id="postUsername"></div>
+    {{ template "profileName" . }}
     {{ template "frontpagePosts" . }}
     {{ template "footer" . }}
-    <script type="text/javascript">
-      for (const tag in tags) {
-        document.getElementById("tag_"+tags[tag]).style.backgroundColor = "#91ba03";
-      }
-if (tags.length >= 1) {
-        document.getElementById("postButt").innerHTML = "Posting with #tags selected";
-      }
-
-document.getElementById("postUsername").innerHTML = "Posts by: " + uname;
-    </script>
-
+    {{ template "colortags" }}
   </body>
 </html>
