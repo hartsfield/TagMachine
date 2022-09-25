@@ -14,7 +14,6 @@ To run this program:
 * Start redis (generally `redis-server &`)
 * run this command with your personal environment variables for the `hmac` sample
 secret:
+</a>
 
-----
-hmacss=YOUR_SECRET_PHRASE go run .
-----
+    hmacss=YOUR_SECRET_PHRASE go run .
