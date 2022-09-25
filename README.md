@@ -17,5 +17,3 @@ secret:
 
 
     hmacss=YOUR_SECRET_PHRASE go run .
-
-
