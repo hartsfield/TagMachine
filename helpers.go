@@ -472,3 +472,25 @@ func isDefaultTag(tag string) bool {
 	}
 	return false
 }
+
+// getChildren takes a postID, retrieves the replies, and returns them as a
+// slice
+func getChildren(ID string) (childs []*postData) {
+	// get the postIDs of the children
+	children, err := rdb.ZRevRange(ctx, ID+":CHILDREN", 0, -1).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// look up each postID to get the post data for the children
+	for _, child := range children {
+		data, err := rdb.HGetAll(ctx, "OBJECT:"+child).Result()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// append the child to the comment tree
+		childs = append(childs, makePost(data, true))
+	}
+	return
+}
