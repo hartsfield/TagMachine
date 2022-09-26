@@ -18,7 +18,8 @@ secret and testing password:
 
     hmacss=YOUR_SECRET_PHRASE testPass=YOUR_TESTING_PASS go run .
 
-This will start TagMachine without any data. You can add test data using another 
-progam I'm creating as a test suite called TagBot.
+This will start TagMachine but the website will fail to load until you add 
+data. You can add test data using another progam I'm creating as a test suite 
+called [TagBot](https://github.com/hartsfield/TagBot).
 
 ![tm](https://user-images.githubusercontent.com/30379836/192171321-90aafe05-25d3-4ea6-9d71-13336c0c1394.png)
