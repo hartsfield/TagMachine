@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"time"
-
-	"github.com/go-redis/redis/v8"
 )
 
 // init.go contains funtions used to initialize data for TagMachine.
@@ -107,23 +105,4 @@ func getData() {
 		frontpage["all"] = append(frontpage["all"], makePost(data, false))
 	}
 
-}
-
-// makeZmem returns a redis Z member for use in a ZSET. Score is set to zero
-func makeZmem(st string) *redis.Z {
-	return &redis.Z{
-		Member: st,
-		Score:  0,
-	}
-}
-
-// isDefaultTag checks to see if a string matches a default tag and returns
-// true if it does
-func isDefaultTag(tag string) bool {
-	for _, dtag := range defaultTags {
-		if dtag == tag {
-			return true
-		}
-	}
-	return false
 }

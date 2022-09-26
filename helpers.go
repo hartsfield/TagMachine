@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -173,10 +174,10 @@ func bubbleUp(parent string, newPostAuthor string) {
 			rdb.ZIncrBy(ctx, "USERS", 1, a)
 			// Increment the parent
 			rdb.ZIncrBy(ctx, g+":CHILDREN", 1, parent)
-			// Increment each comment north of the parent
+			// Run this same function agains (recursively) to
+			// increment each comment north of the parent
 			bubbleUp(g, newPostAuthor)
 		} else {
-			fmt.Println(a, newPostAuthor)
 			// We get here when we reach the top of the tree. This
 			// should be the first post of a thread.
 			if a != newPostAuthor {
@@ -451,4 +452,23 @@ func getSecret() (testPass string) {
 		instructions on running TagMachine.`)
 	}
 	return
+}
+
+// makeZmem returns a redis Z member for use in a ZSET. Score is set to zero
+func makeZmem(st string) *redis.Z {
+	return &redis.Z{
+		Member: st,
+		Score:  0,
+	}
+}
+
+// isDefaultTag checks to see if a string matches a default tag and returns
+// true if it does
+func isDefaultTag(tag string) bool {
+	for _, dtag := range defaultTags {
+		if dtag == tag {
+			return true
+		}
+	}
+	return false
 }
