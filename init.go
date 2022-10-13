@@ -44,7 +44,7 @@ func getData() {
 	// Ex. posts["politics"][]postData{}, it's also defined as a global,
 	// but needs to be redefined here for use in an init() function. There
 	// may be a cleaner way to do this.
-	posts = make(map[string][]*postData)
+	// posts = make(map[string][]*postData)
 
 	// Get all the members of "TAGS" (all the tags in our database)
 	tagmem, err := rdb.ZRevRange(ctx, "TAGS", 0, -1).Result()
@@ -58,16 +58,16 @@ func getData() {
 			tags = append(tags, tag)
 		}
 		// Get the postIDs associated with the tag
-		dbPosts, err := rdb.ZRevRange(ctx, tag, 0, -1).Result()
-		handleErr(err)
+		// dbPosts, err := rdb.ZRevRange(ctx, tag, 0, -1).Result()
+		// handleErr(err)
 
-		// Get the posts using the postIDs
-		for _, post := range dbPosts {
-			data, err := rdb.HGetAll(ctx, "OBJECT:"+post).Result()
-			handleErr(err)
+		// 	// Get the posts using the postIDs
+		// 	for _, post := range dbPosts {
+		// 		data, err := rdb.HGetAll(ctx, "OBJECT:"+post).Result()
+		// 		handleErr(err)
 
-			posts[tag] = append(posts[tag], makePost(data, false))
-		}
+		// 		posts[tag] = append(posts[tag], makePost(data, false))
+		// 	}
 	}
 
 	// frontpage contains all the posts in the database. Also defined
@@ -82,5 +82,4 @@ func getData() {
 
 		frontpage["all"] = append(frontpage["all"], makePost(data, false))
 	}
-
 }

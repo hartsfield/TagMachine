@@ -56,7 +56,10 @@ func signin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	ajaxResponse(w, map[string]string{"success": "false", "error": "Bad Password"})
+	ajaxResponse(w, map[string]string{
+		"success": "false",
+		"error":   "Bad Password",
+	})
 }
 
 // signup signs a user up. It's a response to an XMLHttpRequest (AJAX request)
@@ -169,7 +172,13 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	rdb.Set(ctx, c.Name+":token", "loggedout", 0)
 
 	expire := time.Now()
-	cookie := http.Cookie{Name: "token", Value: "loggedout", Path: "/", Expires: expire, MaxAge: 0}
+	cookie := http.Cookie{
+		Name:    "token",
+		Value:   "loggedout",
+		Path:    "/",
+		Expires: expire,
+		MaxAge:  0,
+	}
 	http.SetCookie(w, &cookie)
 
 	ajaxResponse(w, map[string]string{"error": "false", "success": "true"})
@@ -362,24 +371,24 @@ func nextPage(w http.ResponseWriter, r *http.Request) {
 
 	switch page.PageName {
 	case "hasTags":
-		fmt.Println("tags")
+		pagenate(w, page)
 	case "frontpage":
-		fmt.Println("fp")
+		pagenate(w, page)
 	case "user":
-		fmt.Println("user")
+		pagenate(w, page)
 	default:
-		// freebsd, openbsd,
-		// plan9, windows...
-		fmt.Println("Linux.")
+		pagenate(w, page)
 	}
+}
 
+func pagenate(w http.ResponseWriter, page *pageData) {
 	num, _ := strconv.Atoi(page.Number)
 	fmt.Println((num*5)+1, (num*5)+5)
 	page.Posts = frontpage["all"][(num*5)+1 : (num*5)+5]
 	page.PageNumber = num + 1
 	page.PageName = "frontpage"
 	var b bytes.Buffer
-	err = templates.ExecuteTemplate(&b, "nextPage.tmpl", page)
+	err := templates.ExecuteTemplate(&b, "nextPage.tmpl", page)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -389,6 +398,7 @@ func nextPage(w http.ResponseWriter, r *http.Request) {
 		"template":   b.String(),
 		"pageNumber": fmt.Sprint(page.PageNumber),
 	})
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
