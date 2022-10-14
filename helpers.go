@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -64,7 +64,7 @@ func renewToken(w http.ResponseWriter, r *http.Request, claims *credentials) (ct
 	cookie := http.Cookie{Name: "token", Value: ss, Path: "/", Expires: expire, MaxAge: 0}
 	http.SetCookie(w, &cookie)
 
-	rdb.Set(ctx, claims.Name+":token", ss, 0)
+	rdb.Set(rdbctx, claims.Name+":token", ss, 0)
 	ctxx = context.WithValue(r.Context(), ctxkey, claims)
 	return
 }
@@ -155,12 +155,12 @@ func marshalCredentials(r *http.Request) (*credentials, error) {
 // The logic here is DELICATE.
 func bubbleUp(parent string, newPostAuthor string) {
 	// Get the parentAuthor of parent
-	parentAuthor, err := rdb.HMGet(ctx, "OBJECT:"+parent, "author").Result()
+	parentAuthor, err := rdb.HMGet(rdbctx, "OBJECT:"+parent, "author").Result()
 	handleErr(err)
 
 	if a, ok := parentAuthor[0].(string); ok && len(a) > 2 {
 		// Get the parent of parent (the grandparent)
-		grandParent, err := rdb.HMGet(ctx, "OBJECT:"+parent, "parent").Result()
+		grandParent, err := rdb.HMGet(rdbctx, "OBJECT:"+parent, "parent").Result()
 		handleErr(err)
 
 		// Don't increment the score of the post if its author is the
@@ -171,9 +171,9 @@ func bubbleUp(parent string, newPostAuthor string) {
 				return
 			}
 			// Increment the users score
-			rdb.ZIncrBy(ctx, "USERS", 1, a)
+			rdb.ZIncrBy(rdbctx, "USERS", 1, a)
 			// Increment the parent
-			rdb.ZIncrBy(ctx, g+":CHILDREN", 1, parent)
+			rdb.ZIncrBy(rdbctx, g+":CHILDREN", 1, parent)
 			// Run this same function agains (recursively) to
 			// increment each comment north of the parent
 			bubbleUp(g, newPostAuthor)
@@ -183,25 +183,25 @@ func bubbleUp(parent string, newPostAuthor string) {
 			if a != newPostAuthor {
 				// increment the score if the author isn't
 				// the same as the poster
-				rdb.ZIncrBy(ctx, "USERS", 1, a)
+				rdb.ZIncrBy(rdbctx, "USERS", 1, a)
 				// We only need to do this once
 				// TODO: Consider making "ALLPOSTS" just another tag
-				_, err = rdb.ZIncrBy(ctx, "ALLPOSTS", 1, parent).Result()
+				_, err = rdb.ZIncrBy(rdbctx, "ALLPOSTS", 1, parent).Result()
 				handleErr(err)
 
 				// Get the tags from the post and increment their score
-				tags, err := rdb.HMGet(ctx, "OBJECT:"+parent, "tags").Result()
+				tags, err := rdb.HMGet(rdbctx, "OBJECT:"+parent, "tags").Result()
 				handleErr(err)
 
 				var tagsm []string
 				_ = json.Unmarshal([]byte(tags[0].(string)), &tagsm)
 				for _, tag := range tagsm {
-					_, err := rdb.ZIncrBy(ctx, "TAGS", 1, tag).Result()
+					_, err := rdb.ZIncrBy(rdbctx, "TAGS", 1, tag).Result()
 					handleErr(err)
 					// In this case, the parent is the original
 					// poster, and the thread is posted on each
 					// tag, so we increment "parent" for each tag.
-					_, err = rdb.ZIncrBy(ctx, tag, 1, parent).Result()
+					_, err = rdb.ZIncrBy(rdbctx, tag, 1, parent).Result()
 					handleErr(err)
 				}
 			}
@@ -378,18 +378,18 @@ func processTags(incomingTags []string, postID string) error {
 	for _, tag := range incomingTags {
 		// increment the tag. If it doesn't exist add it to the
 		// database
-		_, err := rdb.ZIncrBy(ctx, "TAGS", 1, tag).Result()
+		_, err := rdb.ZIncrBy(rdbctx, "TAGS", 1, tag).Result()
 		if err != nil {
 			fmt.Println(err)
 			// add a new tag to "TAGS"
-			rdb.ZAdd(ctx, "TAGS", makeZmem(tag))
+			rdb.ZAdd(rdbctx, "TAGS", makeZmem(tag))
 		}
 
 		// Add a reference to the postID as a Zmember to each
 		// tag to retrieve posts by tag name
 		// Ex. "zrannge "POLITICS" 0 -1" should return a list
 		// postID's that are tagged with "POLITICS"
-		_, err = rdb.ZAdd(ctx, tag, zmem).Result()
+		_, err = rdb.ZAdd(rdbctx, tag, zmem).Result()
 		if err != nil {
 			return err
 		}
@@ -397,11 +397,11 @@ func processTags(incomingTags []string, postID string) error {
 	return nil
 }
 
-func addToDB(post map[string]interface{}, authorName string, postID string) error {
+func addPostToDB(post map[string]interface{}, authorName string, postID string) error {
 	zmem := makeZmem(postID)
 	// TODO: Create database pipeline/reversal
 	// Add the post to redis with "OBJECT:postID" as the key
-	_, err := rdb.HMSet(ctx, "OBJECT:"+postID, post).Result()
+	_, err := rdb.HMSet(rdbctx, "OBJECT:"+postID, post).Result()
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func addToDB(post map[string]interface{}, authorName string, postID string) erro
 	// retrieve posts by username
 	// Ex. "zrange bobby:POSTS 0 -1" should return a list of
 	// postIDs from user "bobby"
-	_, err = rdb.ZAdd(ctx, authorName+":POSTS", zmem).Result()
+	_, err = rdb.ZAdd(rdbctx, authorName+":POSTS", zmem).Result()
 	if err != nil {
 		return err
 	}
@@ -421,14 +421,14 @@ func addToDB(post map[string]interface{}, authorName string, postID string) erro
 		// easily retrieve all threads at once.
 		// Ex. "zrange ALLPOSTS 0 -1" should return a list containing
 		// the postIDs of every threads
-		_, err = rdb.ZAdd(ctx, "ALLPOSTS", zmem).Result()
+		_, err = rdb.ZAdd(rdbctx, "ALLPOSTS", zmem).Result()
 		if err != nil {
 			return err
 		}
 	} else {
 		// If it's not a thread it's a reply to a thread
 		// This is a reply, so we add it as a child to the parent post
-		_, err = rdb.ZAdd(ctx, post["parent"].(string)+":CHILDREN", zmem).Result()
+		_, err = rdb.ZAdd(rdbctx, post["parent"].(string)+":CHILDREN", zmem).Result()
 		if err != nil {
 			return err
 		}
@@ -477,14 +477,14 @@ func isDefaultTag(tag string) bool {
 // slice
 func getChildren(ID string) (childs []*postData) {
 	// get the postIDs of the children
-	children, err := rdb.ZRevRange(ctx, ID+":CHILDREN", 0, -1).Result()
+	children, err := rdb.ZRevRange(rdbctx, ID+":CHILDREN", 0, -1).Result()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	// look up each postID to get the post data for the children
 	for _, child := range children {
-		data, err := rdb.HGetAll(ctx, "OBJECT:"+child).Result()
+		data, err := rdb.HGetAll(rdbctx, "OBJECT:"+child).Result()
 		if err != nil {
 			fmt.Println(err)
 		}

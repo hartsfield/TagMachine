@@ -47,7 +47,7 @@ func getData() {
 	posts = make(map[string][]*postData)
 
 	// Get all the members of "TAGS" (all the tags in our database)
-	tagmem, err := rdb.ZRevRange(ctx, "TAGS", 0, -1).Result()
+	tagmem, err := rdb.ZRevRange(rdbctx, "TAGS", 0, -1).Result()
 	handleErr(err)
 
 	tags = []string{} // global used after we filter out the default tags
@@ -58,12 +58,12 @@ func getData() {
 			tags = append(tags, tag)
 		}
 		// Get the postIDs associated with the tag
-		dbPosts, err := rdb.ZRevRange(ctx, tag, 0, -1).Result()
+		dbPosts, err := rdb.ZRevRange(rdbctx, tag, 0, -1).Result()
 		handleErr(err)
 
 		// Get the posts using the postIDs
 		for _, post := range dbPosts {
-			data, err := rdb.HGetAll(ctx, "OBJECT:"+post).Result()
+			data, err := rdb.HGetAll(rdbctx, "OBJECT:"+post).Result()
 			handleErr(err)
 
 			posts[tag] = append(posts[tag], makePost(data, false))
@@ -73,11 +73,11 @@ func getData() {
 	// frontpage contains all the posts in the database. Also defined
 	// globally, but needs to be redefined here for use in init()
 	frontpage = make(map[string][]*postData)
-	dbPosts, err := rdb.ZRevRange(ctx, "ALLPOSTS", 0, -1).Result()
+	dbPosts, err := rdb.ZRevRange(rdbctx, "ALLPOSTS", 0, -1).Result()
 	handleErr(err)
 
 	for _, dbPost := range dbPosts {
-		data, err := rdb.HGetAll(ctx, "OBJECT:"+dbPost).Result()
+		data, err := rdb.HGetAll(rdbctx, "OBJECT:"+dbPost).Result()
 		handleErr(err)
 
 		frontpage["all"] = append(frontpage["all"], makePost(data, false))

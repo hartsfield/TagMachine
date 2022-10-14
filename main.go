@@ -203,7 +203,7 @@ var (
 	defaultTags = []string{"politics", "stem", "arts", "other", "business", "sports"}
 	// this context is used for the client/server connection. It's useful
 	// for passing the token/credentials around.
-	ctx = context.Background()
+	rdbctx = context.Background()
 )
 
 // This initializer runs before main()
@@ -216,7 +216,7 @@ func main() {
 	fmt.Println(string(hmacSampleSecret))
 	// Ping redis to make sure its up
 	fmt.Println("Sending Ping() to redis")
-	rs, err := rdb.Ping(ctx).Result()
+	rs, err := rdb.Ping(rdbctx).Result()
 	if err != nil {
 		panic(err)
 	}
@@ -235,6 +235,7 @@ func main() {
 	mux.Handle("/rules/", checkAuth(http.HandlerFunc(rules)))
 	mux.Handle("/api/newthread", checkAuth(http.HandlerFunc(newThread)))
 	mux.Handle("/api/reply", checkAuth(http.HandlerFunc(newReply)))
+	mux.Handle("/api/follow", checkAuth(http.HandlerFunc(followOrUnfollow)))
 	mux.HandleFunc("/api/signup", signup)
 	mux.HandleFunc("/api/signin", signin)
 	mux.HandleFunc("/api/logout", logout)

@@ -639,3 +639,14 @@ font-size: 0.8em;
     text-transform: unset;
     font-weight: bold;
 }
+
+.followButt {
+    background-color: #3aabd1;
+    color: white;
+    display: inline;
+    padding-top: 0.3em;
+    padding-bottom: 0.4em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    border-radius: 0.3em;
+}

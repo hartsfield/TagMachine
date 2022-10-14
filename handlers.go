@@ -36,7 +36,7 @@ func signin(w http.ResponseWriter, r *http.Request) {
 
 	// Get the passwords hash from the database by looking up the users
 	// name
-	hash, err := rdb.Get(ctx, c.Name).Result()
+	hash, err := rdb.Get(rdbctx, c.Name).Result()
 	if err != nil {
 		fmt.Println(err)
 		ajaxResponse(w, map[string]string{
@@ -90,7 +90,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	// 25, and the password is longer than 7.
 	if match && (len(c.Name) < 25) && (len(c.Name) > 3) && (len(c.Password) > 7) {
 		// Check if user already exists
-		_, err = rdb.Get(ctx, c.Name).Result()
+		_, err = rdb.Get(rdbctx, c.Name).Result()
 		if err != nil {
 			// If username is unique and valid, we attempt to hash
 			// the password
@@ -107,7 +107,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			// Add the user the the USERS set in redis. This
 			// associates a score with the user that can be
 			// incremented or decremented
-			_, err = rdb.ZAdd(ctx, "USERS", makeZmem(c.Name)).Result()
+			_, err = rdb.ZAdd(rdbctx, "USERS", makeZmem(c.Name)).Result()
 			if err != nil {
 				fmt.Println(err)
 				ajaxResponse(w, map[string]string{
@@ -121,7 +121,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			// the user to the redis ZSET, we store the hash in the
 			// database with the username as the key and the hash
 			// as the value thats returned by the key.
-			_, err = rdb.Set(ctx, c.Name, hash, 0).Result()
+			_, err = rdb.Set(rdbctx, c.Name, hash, 0).Result()
 			if err != nil {
 				fmt.Println(err)
 				ajaxResponse(w, map[string]string{
@@ -166,7 +166,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	rdb.Set(ctx, c.Name+":token", "loggedout", 0)
+	rdb.Set(rdbctx, c.Name+":token", "loggedout", 0)
 
 	expire := time.Now()
 	cookie := http.Cookie{Name: "token", Value: "loggedout", Path: "/", Expires: expire, MaxAge: 0}
@@ -335,12 +335,12 @@ func tagsUnion(uTags []string, p *pageData) *pageData {
 	// This function gets every value associated with each tag/key, and
 	// stores them in tempstore. These are the postIDs. This is the UNION
 	// of all tags in urlTags.
-	rdb.ZUnionStore(ctx, "tempstore", &redis.ZStore{Keys: uTags}).Result()
+	rdb.ZUnionStore(rdbctx, "tempstore", &redis.ZStore{Keys: uTags}).Result()
 	// Get all the postIDs from the temp store
-	dbposts, _ := rdb.ZRevRange(ctx, "tempstore", 0, 15).Result()
+	dbposts, _ := rdb.ZRevRange(rdbctx, "tempstore", 0, 15).Result()
 	// Get each post from the database and append it to the page
 	for _, dbpost := range dbposts {
-		obj, _ := rdb.HGetAll(ctx, "OBJECT:"+dbpost).Result()
+		obj, _ := rdb.HGetAll(rdbctx, "OBJECT:"+dbpost).Result()
 		p.Posts = append(p.Posts, makePost(obj, false))
 	}
 	return p
@@ -464,7 +464,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = addToDB(post, a.Name, postID)
+		err = addPostToDB(post, a.Name, postID)
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{
@@ -532,7 +532,7 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 			"type":    "reply",
 		}
 
-		err := addToDB(post, a.Name, postID)
+		err := addPostToDB(post, a.Name, postID)
 		if err != nil {
 			fmt.Println(err)
 			ajaxResponse(w, map[string]string{
@@ -552,4 +552,35 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 		"success": "false",
 		"error":   "Not Logged In",
 	})
+}
+
+func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
+	p, err := marshalCredentials(r)
+	if err != nil {
+		fmt.Println(err)
+		ajaxResponse(w, map[string]string{
+			"success": "false",
+			"error":   "Bad JSON sent to server",
+		})
+		return
+	}
+	fmt.Println(p.Name)
+
+	// Check if the user is logged in. You can't post wothout being logged
+	// in.
+	c := r.Context().Value(ctxkey)
+	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
+		isMem, err := rdb.ZMScore(rdbctx, a.Name+":following", p.Name).Result()
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println(isMem)
+		// if isMem[0] == 0 {
+		// 	rdb.ZRem(rdbctx, a.Name+":following", p.Name)
+		// 	fmt.Println(a.Name + " unfollowed " + p.Name)
+		// } else {
+		// 	rdb.ZAdd(rdbctx, a.Name+":following", makeZmem(p.Name))
+		// 	fmt.Println(a.Name + " followed " + p.Name)
+		// }
+	}
 }

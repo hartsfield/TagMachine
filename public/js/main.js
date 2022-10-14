@@ -338,3 +338,22 @@ function nextPage(lastPageNumber, pageName) {
         tags: tags,
     }));
 }
+
+function follow(username) {
+    var xhr = new XMLHttpRequest();
+
+    xhr.open("POST", "/api/follow");
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var res = JSON.parse(xhr.responseText);
+            if (res.success == "true") {
+            } else {
+            }
+        }
+    };
+
+    xhr.send(JSON.stringify({
+        username: username,
+    }));
+}
