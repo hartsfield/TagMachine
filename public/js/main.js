@@ -348,12 +348,19 @@ function follow(username) {
         if (xhr.status === 200) {
             var res = JSON.parse(xhr.responseText);
             if (res.success == "true") {
-            } else {
+                    if (res.message == "followed") {
+                      document.getElementById("followButt").style.background = "var(--red)";
+                      document.getElementById("followButt").innerHTML = "-";
+                    } else {
+                      document.getElementById("followButt").style.background = "var(--blue)";
+                      document.getElementById("followButt").innerHTML = "+";
+                    }
             }
         }
     };
 
+    console.log(username.Name);
     xhr.send(JSON.stringify({
-        username: username,
+        username: username.Name,
     }));
 }

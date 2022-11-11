@@ -4,5 +4,5 @@
   Ex. tagMachine.com/user/USERNAME takes you to a view of USERNAMES posts.
 -->
 {{ define "profileName" }}
-        <div class="userPage" id="postUsername">Posts by: {{ .UserView }}</div>
+        <div class="userPage" id="postUsername">Posts by: {{ .UserView.Name }}</div>
 {{ end }}

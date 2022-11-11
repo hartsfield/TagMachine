@@ -650,3 +650,16 @@ font-size: 0.8em;
     padding-right: 0.5em;
     border-radius: 0.3em;
 }
+
+:root {
+        --red: #c95b47;
+        --blue: #21a9a2;
+}
+
+.FB_true {
+        background-color: var(--red);
+}
+
+.FB_false {
+        background-color: var(--blue);
+}

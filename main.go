@@ -132,7 +132,12 @@ type pageData struct {
 	Thread      *threadData
 	PageNumber  int
 	PageName    string
-	UserView    string
+	UserView    userView
+}
+
+type userView struct {
+	Name     string
+	IsFriend bool
 }
 
 // threadData is part of pageData and is used to display a single thread or

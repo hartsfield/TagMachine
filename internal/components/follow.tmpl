@@ -1,3 +1,11 @@
 {{ define "follow" }}
-        <div class="followButt" onClick="follow({{.UserView}})">+</div>
+        {{ if .UserData.IsLoggedIn }}
+          {{ if ne .UserData.Name .UserView.Name  }}
+                {{ if .UserView.IsFriend }}
+                <div class="followButt FB_true" id="followButt" onClick="follow({{.UserView}})">-</div>
+                {{ else }}
+                <div class="followButt FB_false" id="followButt" onClick="follow({{.UserView}})">+</div>
+                {{ end }}
+          {{ end }}
+        {{ end }}
 {{ end }}

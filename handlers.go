@@ -307,9 +307,22 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 
 	// build and serve the page
 	page := makePage()
+
+	c := r.Context().Value(ctxkey)
+	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
+		_, err := rdb.ZScore(rdbctx, a.Name+":following", name).Result()
+		if err != nil {
+			// not following
+			page.UserView.IsFriend = false
+		} else {
+			// following
+			page.UserView.IsFriend = true
+		}
+	}
+
 	page.Posts = posts[name]
 	page.PageName = "user"
-	page.UserView = name
+	page.UserView.Name = name
 	exeTmpl(w, r, page, "user.tmpl")
 }
 
@@ -368,8 +381,6 @@ func nextPage(w http.ResponseWriter, r *http.Request) {
 	case "user":
 		fmt.Println("user")
 	default:
-		// freebsd, openbsd,
-		// plan9, windows...
 		fmt.Println("Linux.")
 	}
 
@@ -557,7 +568,7 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 	p, err := marshalCredentials(r)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("571 ", err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Bad JSON sent to server",
@@ -566,21 +577,29 @@ func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(p.Name)
 
-	// Check if the user is logged in. You can't post wothout being logged
+	// Check if the user is logged in. You can't follow without being logged
 	// in.
 	c := r.Context().Value(ctxkey)
 	if a, ok := c.(*credentials); ok && a.IsLoggedIn {
-		isMem, err := rdb.ZMScore(rdbctx, a.Name+":following", p.Name).Result()
+		_, err := rdb.ZScore(rdbctx, a.Name+":following", p.Name).Result()
 		if err != nil {
-			fmt.Println(err)
+			rdb.ZAdd(rdbctx, a.Name+":following", makeZmem(p.Name))
+			fmt.Println(a.Name + " followed " + p.Name)
+			ajaxResponse(w, map[string]string{
+				"success": "true",
+				"message": "followed",
+				"error":   "Not Logged In",
+			})
+
+		} else {
+			rdb.ZRem(rdbctx, a.Name+":following", p.Name)
+			fmt.Println(a.Name + " unfollowed " + p.Name)
+			ajaxResponse(w, map[string]string{
+				"success": "true",
+				"message": "unfollowed",
+				"error":   "Not Logged In",
+			})
+
 		}
-		fmt.Println(isMem)
-		// if isMem[0] == 0 {
-		// 	rdb.ZRem(rdbctx, a.Name+":following", p.Name)
-		// 	fmt.Println(a.Name + " unfollowed " + p.Name)
-		// } else {
-		// 	rdb.ZAdd(rdbctx, a.Name+":following", makeZmem(p.Name))
-		// 	fmt.Println(a.Name + " followed " + p.Name)
-		// }
 	}
 }
