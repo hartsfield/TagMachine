@@ -663,3 +663,19 @@ font-size: 0.8em;
 .FB_false {
         background-color: var(--blue);
 }
+
+.donatePage {
+    display: inline-flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.donate {
+        padding-bottom: 2em;
+        display: inline-flex;
+        padding-left: 2em;
+}
+
+#ethdonate {
+        padding-right: 2em;
+}

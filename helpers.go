@@ -174,7 +174,7 @@ func bubbleUp(parent string, newPostAuthor string) {
 			rdb.ZIncrBy(rdbctx, "USERS", 1, a)
 			// Increment the parent
 			rdb.ZIncrBy(rdbctx, g+":CHILDREN", 1, parent)
-			// Run this same function agains (recursively) to
+			// Run this same function again (recursively) to
 			// increment each comment north of the parent
 			bubbleUp(g, newPostAuthor)
 		} else {
@@ -212,10 +212,10 @@ func bubbleUp(parent string, newPostAuthor string) {
 // makePost takes data in the form of a map[string]string, and returns a
 // *postData{} struct. Use withChildren to specify whether or not to also get
 // the children. If withChildren is true, getChildren() will be run, which is
-// a recursive function should only be run when necessary.
+// a recursive function, and should only be run when necessary.
 func makePost(data map[string]string, withChildren bool) *postData {
-	var arr []string
-	_ = json.Unmarshal([]byte(data["tags"]), &arr)
+	var sl []string
+	_ = json.Unmarshal([]byte(data["tags"]), &sl)
 	if withChildren {
 		return &postData{
 			ID:       data["ID"],
@@ -225,7 +225,7 @@ func makePost(data map[string]string, withChildren bool) *postData {
 			Parent:   data["parent"],
 			TS:       data["created"],
 			Author:   data["author"],
-			Tags:     arr,
+			Tags:     sl,
 		}
 	}
 	return &postData{
@@ -236,7 +236,7 @@ func makePost(data map[string]string, withChildren bool) *postData {
 		Parent:   data["parent"],
 		TS:       data["created"],
 		Author:   data["author"],
-		Tags:     arr,
+		Tags:     sl,
 	}
 }
 

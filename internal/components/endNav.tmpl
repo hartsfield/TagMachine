@@ -7,7 +7,7 @@
       <!-- {{ if .UserData.IsLoggedIn }} -->
       <!--   <div class="loginFormButt logoutButt" onClick="auth('logout')">logout</div> -->
       <!-- {{ end }} -->
-      <div class="genericButt endButt" id="donateButt" onClick="showCode()">Donate</div>
+      <div class="genericButt endButt" id="donateButt" onClick="window.location = window.location.origin + '/donate'">Donate</div>
       {{ if (eq .PageName "rules") }}
         <div class="genericButt endButt" style="background: #c2da59; color: #3f7a61;" onClick="showRules()">Rules</div>
       {{ else }}

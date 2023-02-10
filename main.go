@@ -234,6 +234,7 @@ func main() {
 	// Instantiating the http multiplexer and defining our routes
 	mux := http.NewServeMux()
 	mux.Handle("/", checkAuth(http.HandlerFunc(home)))
+	mux.Handle("/donate/", checkAuth(http.HandlerFunc(donate)))
 	mux.Handle("/user/", checkAuth(http.HandlerFunc(userPosts)))
 	mux.Handle("/tag/", checkAuth(http.HandlerFunc(getTags)))
 	mux.Handle("/view/", checkAuth(http.HandlerFunc(view)))

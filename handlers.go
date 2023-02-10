@@ -169,7 +169,13 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	rdb.Set(rdbctx, c.Name+":token", "loggedout", 0)
 
 	expire := time.Now()
-	cookie := http.Cookie{Name: "token", Value: "loggedout", Path: "/", Expires: expire, MaxAge: 0}
+	cookie := http.Cookie{
+		Name:    "token",
+		Value:   "loggedout",
+		Path:    "/",
+		Expires: expire,
+		MaxAge:  0,
+	}
 	http.SetCookie(w, &cookie)
 
 	ajaxResponse(w, map[string]string{"error": "false", "success": "true"})
@@ -255,22 +261,25 @@ func view(w http.ResponseWriter, r *http.Request) {
 	// Make sure the post has content, (if for some reason redis should
 	// return an empty object), then we create a postData{} struct so we
 	// can start passing it around
-	var p *postData
 	if data["body"] != "" && data["ID"] != "" {
+		var p *postData
 		p = makePost(data, true)
+		// create the thread data by getting the children of the post
+		childs := getChildren(r.Form["postNum"][0])
+		d := &threadData{
+			Thread:   p,
+			Children: childs,
+			Parent:   p.Parent,
+		}
+		page := makePage()
+		page.Thread = d
+		page.PageName = "thread"
+		exeTmpl(w, r, page, "thread.tmpl")
+
+	} else {
+		w.Write([]byte("you broke it"))
 	}
 
-	// create the thread data by getting the children of the post
-	childs := getChildren(r.Form["postNum"][0])
-	d := &threadData{
-		Thread:   p,
-		Children: childs,
-		Parent:   p.Parent,
-	}
-	page := makePage()
-	page.Thread = d
-	page.PageName = "thread"
-	exeTmpl(w, r, page, "thread.tmpl")
 }
 
 // userPosts returns a list of posts by a specified user to the client
@@ -344,6 +353,8 @@ func getTags(w http.ResponseWriter, r *http.Request) {
 	exeTmpl(w, r, tagsUnion(urlTags, page), "home.tmpl")
 }
 
+// tagsUnion is used to retrieve the users selected tags from the database.
+// It's the union of all tags in urlTags.
 func tagsUnion(uTags []string, p *pageData) *pageData {
 	// This function gets every value associated with each tag/key, and
 	// stores them in tempstore. These are the postIDs. This is the UNION
@@ -363,6 +374,12 @@ func rules(w http.ResponseWriter, r *http.Request) {
 	page := makePage()
 	page.PageName = "rules"
 	exeTmpl(w, r, page, "rulesPage.tmpl")
+}
+
+func donate(w http.ResponseWriter, r *http.Request) {
+	page := makePage()
+	page.PageName = "donate"
+	exeTmpl(w, r, page, "donatePage.tmpl")
 }
 
 func nextPage(w http.ResponseWriter, r *http.Request) {
@@ -568,14 +585,12 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 	p, err := marshalCredentials(r)
 	if err != nil {
-		fmt.Println("571 ", err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Bad JSON sent to server",
 		})
 		return
 	}
-	fmt.Println(p.Name)
 
 	// Check if the user is logged in. You can't follow without being logged
 	// in.
