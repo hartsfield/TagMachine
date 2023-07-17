@@ -193,6 +193,9 @@ var (
 		Password: "",
 		DB:       0,
 	})
+	// this context is used for the client/server connection. It's useful
+	// for passing the token/credentials around.
+	rdbctx = context.Background()
 
 	// HTML templates. We use them like components and compile them
 	// together at runtime.
@@ -206,9 +209,6 @@ var (
 	// auxiliary tags to be added in the init.go file
 	tags        = []string{}
 	defaultTags = []string{"politics", "stem", "arts", "other", "business", "sports"}
-	// this context is used for the client/server connection. It's useful
-	// for passing the token/credentials around.
-	rdbctx = context.Background()
 )
 
 // This initializer runs before main()

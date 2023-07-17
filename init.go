@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -17,7 +16,6 @@ var lastCached time.Time
 // be adjusted if needed.
 func beginCache() {
 	if time.Now().Sub(lastCached).Milliseconds() > 3000 {
-		fmt.Println("caching")
 		lastCached = time.Now()
 		// Race condition(?) prevention. Say we have two users posting
 		// consecutively. User_1 submits a post and this triggers a
@@ -25,16 +23,13 @@ func beginCache() {
 		// If we didn't have this delay, the User_2's post would not
 		// get cached, because the rebuild triggered by User_1 would
 		// have already started.
-		// By delaying the rebuild for 3.5 seconds we insure
-		// all posts are cached, even those that don't trigger a
-		// re-cache automatically.
-		time.AfterFunc(3500*time.Millisecond, func() { getData() })
+		// By delaying the rebuild for 3 seconds we ensure all posts
+		// are cached, even those that don't trigger a re-cache
+		// automatically.
+		// This function is non-blocking (is executed in a goroutine)
+		time.AfterFunc(3000*time.Millisecond, func() { getData() })
 	}
 }
-
-// func trimDB() {
-// 	_, err := rdb.ZRevRange(ctx, ALLPOSTS)
-// }
 
 // getData gets the board data from redis, including the tags and posts. This
 // is used to initialize tagmachine with data, and to update the cached data in

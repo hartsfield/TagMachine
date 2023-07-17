@@ -196,6 +196,7 @@ func checkAuth(next http.Handler) http.Handler {
 		token, err := r.Cookie("token")
 		if err != nil {
 			fmt.Println(err)
+			anonSignin(w, r)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -617,4 +618,53 @@ func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 
 		}
 	}
+}
+func anonSignin(w http.ResponseWriter, r *http.Request) {
+	c := &credentials{
+		Name:     strings.Split(r.RemoteAddr, "]")[0],
+		Password: genPostID(15),
+	}
+	// If username is unique and valid, we attempt to hash
+	// the password
+	hash, err := hashPassword(c.Password)
+	if err != nil {
+		fmt.Println(err)
+		ajaxResponse(w, map[string]string{
+			"success": "false",
+			"error":   "Invalid Password",
+		})
+		return
+	}
+
+	// Add the user the the USERS set in redis. This
+	// associates a score with the user that can be
+	// incremented or decremented
+	_, err = rdb.ZAdd(rdbctx, "USERS", makeZmem(c.Name)).Result()
+	if err != nil {
+		fmt.Println(err)
+		ajaxResponse(w, map[string]string{
+			"success": "false",
+			"error":   "Error ",
+		})
+		return
+	}
+
+	// If the password is hashable, and we were able to add
+	// the user to the redis ZSET, we store the hash in the
+	// database with the username as the key and the hash
+	// as the value thats returned by the key.
+	_, err = rdb.Set(rdbctx, c.Name, hash, 0).Result()
+	if err != nil {
+		fmt.Println(err)
+		ajaxResponse(w, map[string]string{
+			"success": "false",
+			"error":   "Error ",
+		})
+		return
+	}
+
+	// Set user token/credentials
+	newClaims(w, r, c)
+
+	return
 }

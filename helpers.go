@@ -209,37 +209,6 @@ func bubbleUp(parent string, newPostAuthor string) {
 	}
 }
 
-// makePost takes data in the form of a map[string]string, and returns a
-// *postData{} struct. Use withChildren to specify whether or not to also get
-// the children. If withChildren is true, getChildren() will be run, which is
-// a recursive function, and should only be run when necessary.
-func makePost(data map[string]string, withChildren bool) *postData {
-	var sl []string
-	_ = json.Unmarshal([]byte(data["tags"]), &sl)
-	if withChildren {
-		return &postData{
-			ID:       data["ID"],
-			Title:    data["title"],
-			Body:     template.HTML(data["body"]),
-			Children: getChildren(data["ID"]),
-			Parent:   data["parent"],
-			TS:       data["created"],
-			Author:   data["author"],
-			Tags:     sl,
-		}
-	}
-	return &postData{
-		ID:       data["ID"],
-		Title:    data["title"],
-		Body:     template.HTML(data["body"]),
-		Children: nil,
-		Parent:   data["parent"],
-		TS:       data["created"],
-		Author:   data["author"],
-		Tags:     sl,
-	}
-}
-
 // trimHashTags trims everything before the last "#" on each tag and then
 // removes any duplicates.
 func trimHashTags(htags []string) []string {
@@ -449,7 +418,7 @@ func getSecret() (testPass string) {
 	testPass = os.Getenv("testPass")
 	if len(testPass) < 10 {
 		log.Panic(`Testing password rejected, please see README for 
-		instructions on running TagMachine.`)
+instructions on running TagMachine.`)
 	}
 	return
 }
@@ -473,6 +442,38 @@ func isDefaultTag(tag string) bool {
 	return false
 }
 
+// makePost takes data in the form of a map[string]string, and returns a
+// *postData{} struct. Use withChildren to specify whether or not to also get
+// the children. If withChildren is true, getChildren() will be run, which is
+// a recursive function, and should only be run when necessary.
+func makePost(data map[string]string, withChildren bool) *postData {
+	var sl []string
+	_ = json.Unmarshal([]byte(data["tags"]), &sl)
+	if withChildren {
+		return &postData{
+			ID:    data["ID"],
+			Title: data["title"],
+			Body:  template.HTML(data["body"]),
+			// NOTE: Recursive
+			Children: getChildren(data["ID"]),
+			Parent:   data["parent"],
+			TS:       data["created"],
+			Author:   data["author"],
+			Tags:     sl,
+		}
+	}
+	return &postData{
+		ID:       data["ID"],
+		Title:    data["title"],
+		Body:     template.HTML(data["body"]),
+		Children: nil,
+		Parent:   data["parent"],
+		TS:       data["created"],
+		Author:   data["author"],
+		Tags:     sl,
+	}
+}
+
 // getChildren takes a postID, retrieves the replies, and returns them as a
 // slice
 func getChildren(ID string) (childs []*postData) {
@@ -490,6 +491,7 @@ func getChildren(ID string) (childs []*postData) {
 		}
 
 		// append the child to the comment tree
+		// NOTE: Recursive
 		childs = append(childs, makePost(data, true))
 	}
 	return
