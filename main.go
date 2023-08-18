@@ -193,6 +193,7 @@ var (
 		Password: "",
 		DB:       0,
 	})
+
 	// this context is used for the client/server connection. It's useful
 	// for passing the token/credentials around.
 	rdbctx = context.Background()
