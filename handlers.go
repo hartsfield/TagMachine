@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -420,7 +421,7 @@ func nextPage(w http.ResponseWriter, r *http.Request) {
 		"success":    "true",
 		"error":      "false",
 		"template":   b.String(),
-		"pageNumber": log.Sprint(page.PageNumber),
+		"pageNumber": fmt.Sprint(page.PageNumber),
 	})
 }
 
