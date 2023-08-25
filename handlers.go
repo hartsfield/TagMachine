@@ -625,7 +625,8 @@ func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 }
 func anonSignin(w http.ResponseWriter, r *http.Request) {
 	c := &credentials{
-		Name:     strings.Split(r.RemoteAddr, "]")[0],
+		// Name:     strings.Split(r.RemoteAddr, "]")[0],
+		Name:     r.RemoteAddr,
 		Password: genPostID(15),
 	}
 	// If username is unique and valid, we attempt to hash
