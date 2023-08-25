@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -26,7 +26,7 @@ func signin(w http.ResponseWriter, r *http.Request) {
 	// Marshal the Credentials into a credentials struct
 	c, err := marshalCredentials(r)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Invalid Credentials",
@@ -38,7 +38,7 @@ func signin(w http.ResponseWriter, r *http.Request) {
 	// name
 	hash, err := rdb.Get(rdbctx, c.Name).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "User doesn't exist",
@@ -67,7 +67,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	// Marshal the Credentials into a credentials struct
 	c, err := marshalCredentials(r)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Invalid Credentials",
@@ -78,7 +78,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	// Make sure the username doesn't contain forbidden symbols
 	match, err := regexp.MatchString("^[A-Za-z0-9]+(?:[ _-][A-Za-z0-9]+)*$", c.Name)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Invalid Username",
@@ -96,7 +96,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			// the password
 			hash, err := hashPassword(c.Password)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				ajaxResponse(w, map[string]string{
 					"success": "false",
 					"error":   "Invalid Password",
@@ -109,7 +109,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			// incremented or decremented
 			_, err = rdb.ZAdd(rdbctx, "USERS", makeZmem(c.Name)).Result()
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				ajaxResponse(w, map[string]string{
 					"success": "false",
 					"error":   "Error ",
@@ -123,7 +123,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			// as the value thats returned by the key.
 			_, err = rdb.Set(rdbctx, c.Name, hash, 0).Result()
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				ajaxResponse(w, map[string]string{
 					"success": "false",
 					"error":   "Error ",
@@ -159,12 +159,12 @@ func signup(w http.ResponseWriter, r *http.Request) {
 func logout(w http.ResponseWriter, r *http.Request) {
 	token, err := r.Cookie("token")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	c, err := parseToken(token.Value)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	rdb.Set(rdbctx, c.Name+":token", "loggedout", 0)
 
@@ -195,8 +195,8 @@ func checkAuth(next http.Handler) http.Handler {
 		// get the "token" cookie
 		token, err := r.Cookie("token")
 		if err != nil {
-			fmt.Println(err)
-			anonSignin(w, r)
+			log.Println(err)
+			// anonSignin(w, r)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -205,7 +205,7 @@ func checkAuth(next http.Handler) http.Handler {
 		// obtaining user credentials if it is
 		c, err := parseToken(token.Value)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -214,7 +214,7 @@ func checkAuth(next http.Handler) http.Handler {
 		// database
 		tkn, err := rdb.Get(ctx, c.Name+":token").Result()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			next.ServeHTTP(w, r.WithContext(ctx))
 			return
 		}
@@ -254,13 +254,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 func view(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	// look up the postNum/postID, and retrieve the post data if it's valid
 	data, err := rdb.HGetAll(context.Background(), "OBJECT:"+r.Form["postNum"][0]).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
 	// Make sure the post has content, (if for some reason redis should
@@ -299,7 +299,7 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 	// retrieve a list of postIDs of posts by the user
 	dbposts, err := rdb.ZRevRange(context.Background(), name+":POSTS", 0, -1).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -311,7 +311,7 @@ func userPosts(w http.ResponseWriter, r *http.Request) {
 		// data
 		data, err := rdb.HGetAll(context.Background(), "OBJECT:"+post).Result()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 
 		// append the posts to the map that will be used to for the
@@ -347,7 +347,7 @@ func getTags(w http.ResponseWriter, r *http.Request) {
 	// parse the tags into the slice `urlTags`
 	err := r.ParseForm()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	urlTags := strings.Split(r.Form["tags"][0], ",")
 
@@ -390,37 +390,37 @@ func donate(w http.ResponseWriter, r *http.Request) {
 func nextPage(w http.ResponseWriter, r *http.Request) {
 	page, err := marshalPageData(r)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 
-	fmt.Println(page.PageName)
+	log.Println(page.PageName)
 
 	switch page.PageName {
 	case "hasTags":
-		fmt.Println("tags")
+		log.Println("tags")
 	case "frontpage":
-		fmt.Println("fp")
+		log.Println("fp")
 	case "user":
-		fmt.Println("user")
+		log.Println("user")
 	default:
-		fmt.Println("Linux.")
+		log.Println("Linux.")
 	}
 
 	num, _ := strconv.Atoi(page.Number)
-	fmt.Println((num*5)+1, (num*5)+5)
+	log.Println((num*5)+1, (num*5)+5)
 	page.Posts = frontpage["all"][(num*5)+1 : (num*5)+5]
 	page.PageNumber = num + 1
 	page.PageName = "frontpage"
 	var b bytes.Buffer
 	err = templates.ExecuteTemplate(&b, "nextPage.tmpl", page)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	ajaxResponse(w, map[string]string{
 		"success":    "true",
 		"error":      "false",
 		"template":   b.String(),
-		"pageNumber": fmt.Sprint(page.PageNumber),
+		"pageNumber": log.Sprint(page.PageNumber),
 	})
 }
 
@@ -436,7 +436,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 	// Convert the JSON sent from the client to a postData{} struct
 	p, err := marshalpostData(r)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Bad JSON sent to server",
@@ -466,7 +466,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 		// redis.
 		bTags, err := bytify(trimHashTags(p.Tags))
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			ajaxResponse(w, map[string]string{
 				"success": "false",
 				"error":   "Bad JSON in tags",
@@ -489,7 +489,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 		// Increment or add tags to the database
 		err = processTags(p.Tags, postID)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			ajaxResponse(w, map[string]string{
 				"success": "false",
 				"error":   "Error setting database object",
@@ -499,7 +499,7 @@ func newThread(w http.ResponseWriter, r *http.Request) {
 
 		err = addPostToDB(post, a.Name, postID)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			ajaxResponse(w, map[string]string{
 				"success": "false",
 				"error":   "Error setting database object",
@@ -530,7 +530,7 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 	// Convert the JSON sent from the client to a postData{} struct
 	p, err := marshalpostData(r)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Bad JSON sent to server",
@@ -567,7 +567,7 @@ func newReply(w http.ResponseWriter, r *http.Request) {
 
 		err := addPostToDB(post, a.Name, postID)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			ajaxResponse(w, map[string]string{
 				"success": "false",
 				"error":   "Error setting database object",
@@ -604,7 +604,7 @@ func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 		_, err := rdb.ZScore(rdbctx, a.Name+":following", p.Name).Result()
 		if err != nil {
 			rdb.ZAdd(rdbctx, a.Name+":following", makeZmem(p.Name))
-			fmt.Println(a.Name + " followed " + p.Name)
+			log.Println(a.Name + " followed " + p.Name)
 			ajaxResponse(w, map[string]string{
 				"success": "true",
 				"message": "followed",
@@ -613,7 +613,7 @@ func followOrUnfollow(w http.ResponseWriter, r *http.Request) {
 
 		} else {
 			rdb.ZRem(rdbctx, a.Name+":following", p.Name)
-			fmt.Println(a.Name + " unfollowed " + p.Name)
+			log.Println(a.Name + " unfollowed " + p.Name)
 			ajaxResponse(w, map[string]string{
 				"success": "true",
 				"message": "unfollowed",
@@ -633,7 +633,7 @@ func anonSignin(w http.ResponseWriter, r *http.Request) {
 	// the password
 	hash, err := hashPassword(c.Password)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Invalid Password",
@@ -646,7 +646,7 @@ func anonSignin(w http.ResponseWriter, r *http.Request) {
 	// incremented or decremented
 	_, err = rdb.ZAdd(rdbctx, "USERS", makeZmem(c.Name)).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Error ",
@@ -660,7 +660,7 @@ func anonSignin(w http.ResponseWriter, r *http.Request) {
 	// as the value thats returned by the key.
 	_, err = rdb.Set(rdbctx, c.Name, hash, 0).Result()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		ajaxResponse(w, map[string]string{
 			"success": "false",
 			"error":   "Error ",
