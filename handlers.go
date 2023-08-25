@@ -239,7 +239,11 @@ func checkAuth(next http.Handler) http.Handler {
 // home serves the home page, which is a collection of all posts/tags
 func home(w http.ResponseWriter, r *http.Request) {
 	page := makePage()
-	page.Posts = frontpage["all"][0:5]
+	if len(frontpage["all"]) > 0 {
+		page.Posts = frontpage["all"][0:len(frontpage["all"])]
+	} else {
+		page.Posts = frontpage["all"]
+	}
 	page.PageName = "frontpage"
 	page.PageNumber = 1
 	exeTmpl(w, r, page, "home.tmpl")
