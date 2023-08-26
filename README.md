@@ -1,5 +1,9 @@
 # #TagMachine
 
+# NOTE: I'm re-writing this project using the bolt architecture here: https://github.com/hartsfield/machinetag
+
+# Consider this project obsolete
+
 NOTE: This program is still in alpha stages and is extremely unstable. Don't 
 expect it to be bug free. 
 
